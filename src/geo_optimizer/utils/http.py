@@ -15,8 +15,11 @@ Implements anti-SSRF protections:
 
 from __future__ import annotations
 
+import functools
+import logging
 import socket
 import threading
+import time
 from urllib.parse import urlparse
 
 import requests
@@ -24,6 +27,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from geo_optimizer.models.config import HEADERS
+
+_logger = logging.getLogger(__name__)
 
 # Response size limit: 10 MB (prevents DoS from huge responses)
 MAX_RESPONSE_SIZE = 10 * 1024 * 1024
@@ -33,6 +38,14 @@ _MAX_REDIRECTS = 10
 
 # Chunk size for streaming (8 KB)
 _CHUNK_SIZE = 8192
+
+# Exponential backoff configuration for transient failures
+_RETRYABLE_EXCEPTIONS: tuple[type[Exception], ...] = (
+    requests.exceptions.Timeout,
+    requests.exceptions.ConnectionError,
+)
+_MAX_RETRIES: int = 3
+_BACKOFF_BASE: int = 2
 
 
 def create_session_with_retry(
@@ -82,6 +95,56 @@ def create_session_with_retry(
     session.mount("https://", adapter)
 
     return session
+
+
+def with_retry(max_retries: int = _MAX_RETRIES, backoff_base: int = _BACKOFF_BASE):
+    """Decorator per retry con backoff esponenziale sui transient failures.
+
+    Riprova solo per errori transitori (timeout, connection error).
+    NON riprova per: 4xx client error, SSRF validation error,
+    response too large, too many redirects.
+
+    Args:
+        max_retries: Numero massimo di tentativi (default: 3).
+        backoff_base: Base per l'esponenziale: delay = base ** attempt (default: 2).
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except _RETRYABLE_EXCEPTIONS as exc:
+                    last_exception = exc
+                    if attempt < max_retries:
+                        delay = backoff_base ** attempt
+                        _logger.warning(
+                            "Retry %d/%d for %s in %.1fs: %s",
+                            attempt + 1,
+                            max_retries,
+                            func.__name__,
+                            delay,
+                            exc,
+                        )
+                        time.sleep(delay)
+            # Tutti i retry esauriti
+            raise last_exception
+
+        return wrapper
+
+    return decorator
+
+
+@with_retry()
+def _execute_request(session, url: str, timeout: int) -> requests.Response:
+    """Esegue la richiesta HTTP con retry esponenziale sui transient failures.
+
+    Questa funzione e' wrappata da @with_retry per separare la logica di retry
+    dalla logica di gestione redirect e streaming.
+    """
+    return session.get(url, timeout=timeout, allow_redirects=False, stream=True)
 
 
 # Fix #330: DNS pinning via thread-local instead of a global lock.
@@ -225,17 +288,14 @@ def _fetch_with_manual_redirects(
 
     while redirect_count <= _MAX_REDIRECTS:
         try:
-            # stream=True: the body is not immediately downloaded into RAM
-            r = session.get(
-                current_url,
-                timeout=timeout,
-                allow_redirects=False,  # Manual redirect handling
-                stream=True,
-            )
-        except requests.exceptions.Timeout:
-            return None, f"Timeout ({timeout}s) after 3 retries"
+            # stream=True: il body non viene scaricato immediatamente in RAM
+            r = _execute_request(session, current_url, timeout)
+        except requests.exceptions.Timeout as e:
+            _logger.warning("Timeout per %s dopo retry esponenziale: %s", current_url, e)
+            return None, f"Timeout ({timeout}s) dopo retry esponenziale"
         except requests.exceptions.ConnectionError as e:
-            return None, f"Connection failed after 3 retries: {e}"
+            _logger.warning("ConnectionError per %s dopo retry esponenziale: %s", current_url, e)
+            return None, f"Connection failed dopo retry esponenziale: {e}"
         except Exception as e:
             return None, str(e)
 
