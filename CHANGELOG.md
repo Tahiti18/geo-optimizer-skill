@@ -5,11 +5,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · [SemVer](https://semv
 
 ---
 
-## [Unreleased]
+## [4.10.0] — 2026-04-29
 
-Next planned release: **v4.10.0** (Veil) — Late May / Early June 2026.
+### Added
+- **HTTP Retry with Exponential Backoff** (#401) — `fetch_url()` now retries on transient failures: timeouts, 5xx errors, connection errors, rate limiting (429). Configurable max attempts (3) and backoff factor (2s). Zero breaking changes.
+- **Telemetry System** (#403) — structured event tracking with `geo_` prefix for the web demo: `geo_audit_run`, `geo_score_improved`, `geo_suggestion_applied`, `geo_api_error`, `geo_badge_generated`. SQLite-backed (`~/.geo-optimizer/telemetry.db`) with singleton store for cross-request persistence.
+- **Hallucination Bait Detection** (#377) — detects 8 content patterns that cause LLM hallucinations: unsourced statistics, absolute claims, speculative statements, vague ranges, AI-generated signals, self-citations, missing measurement units, medical claims without disclaimer. Severity scoring (clean/low/medium/high). Integrated in audit pipeline.
+- **AI Search Intent Mapping** (#385) — analyzes page content across 4 intent categories (informational, navigational, transactional, commercial). Pattern matching in EN + IT with schema verification. Includes gap analysis, radar chart data (`[{axis, value}, ...]`), actionable recommendations, and Prompt Library taxonomy alignment (`map_prompt_library_intents()`).
+- **IntentMappingResult dataclass** — `intents_found`, `intents_missing`, `intent_details`, `primary_intent`, `gap_summary`, `recommendations`, `radar_data`, `prompt_library_intents`
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the full release calendar and project direction.
+### Fixed
+- E501 line length violations in llms.txt and faq.json web endpoints
+
+### Tests
+- 1425 tests (all mocked, zero network), up from 1364
+- 61 new tests: 31 retry/backoff + 11 hallucination bait + 9 intent mapping gap analysis + 9 telemetry
+
+### Signal Architecture Refinement — Complete
+The v4.10 (Veil) cycle focused on signal quality and detection depth:
+1. Retry resilience for production audit reliability
+2. Usage telemetry to inform roadmap decisions
+3. Hallucination bait detection for AI content safety
+4. Intent mapping for content strategy guidance
 
 ---
 
