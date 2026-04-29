@@ -110,15 +110,19 @@ def query_llm(
 def _query_openai(prompt: str, *, system: str, api_key: str, model: str, max_tokens: int) -> LLMResponse:
     try:
         from openai import OpenAI
+        from openai.types.chat import (
+            ChatCompletionSystemMessageParam,
+            ChatCompletionUserMessageParam,
+        )
     except ImportError:
         return LLMResponse(error="openai not installed (pip install geo-optimizer-skill[llm])")
 
     try:
         client = OpenAI(api_key=api_key, timeout=_LLM_TIMEOUT)
-        messages: list[dict] = []
+        messages: list[ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam] = []
         if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+            messages.append(ChatCompletionSystemMessageParam(role="system", content=system))
+        messages.append(ChatCompletionUserMessageParam(role="user", content=prompt))
         resp = client.chat.completions.create(model=model, messages=messages, max_tokens=max_tokens)
         choice = resp.choices[0]
         usage = resp.usage
@@ -162,15 +166,19 @@ def _query_anthropic(prompt: str, *, system: str, api_key: str, model: str, max_
 def _query_groq(prompt: str, *, system: str, api_key: str, model: str, max_tokens: int) -> LLMResponse:
     try:
         from groq import Groq
+        from openai.types.chat import (
+            ChatCompletionSystemMessageParam,
+            ChatCompletionUserMessageParam,
+        )
     except ImportError:
         return LLMResponse(error="groq not installed (pip install groq)")
 
     try:
         client = Groq(api_key=api_key, timeout=_LLM_TIMEOUT)
-        messages: list[dict] = []
+        messages: list[ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam] = []
         if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+            messages.append(ChatCompletionSystemMessageParam(role="system", content=system))
+        messages.append(ChatCompletionUserMessageParam(role="user", content=prompt))
         resp = client.chat.completions.create(model=model, messages=messages, max_tokens=max_tokens)
         choice = resp.choices[0]
         usage = resp.usage
