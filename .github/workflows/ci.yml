@@ -84,4 +84,4 @@ jobs:
       - name: Audit dependencies
         run: |
           pip install .
-          pip-audit --ignore-vuln CVE-2026-4539  # pygments: no fix version available yet
+          pip-audit --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-3219  # pygments, pip: no fix versions available yet
