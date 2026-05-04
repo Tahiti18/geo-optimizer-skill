@@ -363,8 +363,8 @@ def format_competitive_narrative(result: CompetitiveNarrativeResult) -> dict[str
     """Format competitive narrative result as dictionary for API response."""
     return {
         "target_url": result.target_url,
-        "target_score": result.target_audit.score if hasattr(result, "target_audit") else 0,
-        "target_band": result.target_audit.band if hasattr(result, "target_audit") else "critical",
+        "target_score": result.target_audit.score if result.target_audit is not None else 0,
+        "target_band": result.target_audit.band if result.target_audit is not None else "critical",
         "competitors": [
             {
                 "url": c.url,
