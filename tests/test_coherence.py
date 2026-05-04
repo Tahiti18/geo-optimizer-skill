@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+import sys
+from unittest.mock import Mock, patch
+
 from bs4 import BeautifulSoup
 
 from geo_optimizer.core.coherence_analyzer import analyze_coherence
 from geo_optimizer.core.term_extractor import extract_page_terms
-from geo_optimizer.models.results import CoherenceIssue, PageTermExtract
+from geo_optimizer.models.results import PageTermExtract, SitemapUrl
 
 
 def _soup(html: str) -> BeautifulSoup:
@@ -103,10 +107,7 @@ class TestCoherenceAnalyzer:
         assert result.coherence_score < 100
 
     def test_score_floor_at_zero(self):
-        extracts = [
-            PageTermExtract(url=f"https://a.com/{i}", title="Same Title", language="en")
-            for i in range(25)
-        ]
+        extracts = [PageTermExtract(url=f"https://a.com/{i}", title="Same Title", language="en") for i in range(25)]
         result = analyze_coherence(extracts)
         assert result.coherence_score >= 0
 
@@ -114,3 +115,160 @@ class TestCoherenceAnalyzer:
         result = analyze_coherence([])
         assert result.checked is True
         assert result.pages_analyzed == 0
+
+
+# ─── Site Coherence Orchestrator ───────────────────────────────────────────────
+
+
+class TestSiteCoherenceOrchestrator:
+    def test_run_site_coherence_with_empty_sitemap(self):
+        # Arrange
+        with patch("geo_optimizer.core.site_coherence.fetch_sitemap") as mock_sitemap:
+            mock_sitemap.return_value = []
+
+            from geo_optimizer.core.site_coherence import run_site_coherence
+
+            result = run_site_coherence("https://example.com/sitemap.xml")
+
+        # Assert
+        assert result.checked is True
+        assert result.pages_analyzed == 0
+
+    def test_run_site_coherence_with_realistic_sitemap(self):
+        # Arrange
+        entries = [
+            SitemapUrl(url="https://a.com"),
+            SitemapUrl(url="https://b.com"),
+        ]
+
+        with (
+            patch("geo_optimizer.core.site_coherence.fetch_sitemap") as mock_sitemap,
+            patch("geo_optimizer.core.site_coherence._fetch_and_extract") as mock_fetch,
+        ):
+            mock_sitemap.return_value = entries
+            mock_fetch.return_value = [
+                PageTermExtract(url="https://a.com", title="Home", language="it"),
+                PageTermExtract(url="https://b.com", title="About", language="it"),
+            ]
+
+            from geo_optimizer.core.site_coherence import run_site_coherence
+
+            result = run_site_coherence("https://example.com/sitemap.xml")
+
+        # Assert
+        assert result.checked is True
+        assert result.pages_analyzed == 2
+        assert result.coherence_score == 100
+
+    def test_dedupe_urls_removes_duplicates(self):
+        # Arrange
+        entries = [
+            SitemapUrl(url="https://a.com"),
+            SitemapUrl(url="https://a.com"),
+            SitemapUrl(url="https://b.com"),
+        ]
+
+        from geo_optimizer.core.site_coherence import _dedupe_urls
+
+        # Act
+        result = _dedupe_urls(entries, max_pages=10)
+
+        # Assert
+        assert len(result) == 2
+        assert result == ["https://a.com", "https://b.com"]
+
+    def test_dedupe_urls_limits_by_max_pages(self):
+        # Arrange
+        entries = [
+            SitemapUrl(url="https://a.com"),
+            SitemapUrl(url="https://b.com"),
+            SitemapUrl(url="https://c.com"),
+        ]
+
+        from geo_optimizer.core.site_coherence import _dedupe_urls
+
+        # Act
+        result = _dedupe_urls(entries, max_pages=2)
+
+        # Assert
+        assert len(result) == 2
+        assert result == ["https://a.com", "https://b.com"]
+
+    def test_fetch_and_extract_skips_failed_responses(self):
+        # Arrange
+        urls = ["https://a.com", "https://b.com"]
+
+        with (
+            patch("geo_optimizer.core.site_coherence.fetch_url") as mock_fetch,
+            patch("geo_optimizer.core.site_coherence.extract_page_terms") as mock_extract,
+        ):
+            mock_fetch.side_effect = [
+                (Mock(text="<html><body><p>Test</p></body></html>", status_code=200), None),
+                (None, "SSRF blocked"),
+            ]
+            mock_extract.return_value = PageTermExtract(url="https://a.com")
+
+            from geo_optimizer.core.site_coherence import _fetch_and_extract
+
+            result = _fetch_and_extract(urls)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].url == "https://a.com"
+
+    def test_run_site_coherence_async_fallback_sync(self):
+        # Arrange
+        entries = [SitemapUrl(url="https://example.com/page1")]
+
+        with (
+            patch.dict(sys.modules, {"geo_optimizer.utils.http_async": None}),
+            patch("geo_optimizer.core.site_coherence.fetch_sitemap") as mock_sitemap,
+            patch("geo_optimizer.core.site_coherence._fetch_and_extract") as mock_fetch,
+        ):
+            mock_sitemap.return_value = entries
+            mock_fetch.return_value = [PageTermExtract(url="https://example.com/page1")]
+
+            from geo_optimizer.core.site_coherence import run_site_coherence_async
+
+            # Must use asyncio.run because the function is async
+            result = asyncio.run(run_site_coherence_async("https://example.com/sitemap.xml"))
+
+        # Assert
+        assert result.checked is True
+        assert result.pages_analyzed == 1
+
+    def test_run_site_coherence_async_success(self):
+        # Arrange
+        entries = [
+            SitemapUrl(url="https://a.com"),
+            SitemapUrl(url="https://b.com"),
+        ]
+
+        # Mock per fetch_urls_async con una risposta valida e una fallita
+        async def mock_fetch_urls_async(urls):
+            responses = {}
+            for url in urls:
+                if url == "https://a.com":
+                    mock_resp = Mock()
+                    mock_resp.text = "<html><body><p>Content of a</p></body></html>"
+                    responses[url] = (mock_resp, None)
+                else:
+                    responses[url] = (None, "SSRF blocked")
+            return responses
+
+        with (
+            patch("geo_optimizer.core.site_coherence.fetch_sitemap") as mock_sitemap,
+            patch("geo_optimizer.utils.http_async.fetch_urls_async", new=mock_fetch_urls_async),
+            patch("geo_optimizer.core.site_coherence.extract_page_terms") as mock_extract,
+        ):
+            mock_sitemap.return_value = entries
+            mock_extract.return_value = PageTermExtract(url="https://a.com")
+
+            from geo_optimizer.core.site_coherence import run_site_coherence_async
+
+            result = asyncio.run(run_site_coherence_async("https://example.com/sitemap.xml"))
+
+        # Assert
+        assert result.checked is True
+        assert result.pages_analyzed == 1
+        assert mock_extract.call_count == 1  # only one valid response
