@@ -36,7 +36,7 @@ def run_site_coherence(
     """
     entries = fetch_sitemap(sitemap_url)
     if not entries:
-        return SemanticCoherenceResult(checked=True)
+        return SemanticCoherenceResult(checked=True, pages_analyzed=0, coherence_score=0)
 
     urls = _dedupe_urls(entries, max_pages)
     extracts = _fetch_and_extract(urls)
@@ -51,7 +51,7 @@ async def run_site_coherence_async(
     """Async variant with parallel page fetching."""
     entries = await asyncio.to_thread(fetch_sitemap, sitemap_url)
     if not entries:
-        return SemanticCoherenceResult(checked=True)
+        return SemanticCoherenceResult(checked=True, pages_analyzed=0, coherence_score=0)
 
     urls = _dedupe_urls(entries, max_pages)
 
