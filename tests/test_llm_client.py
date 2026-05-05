@@ -1,0 +1,169 @@
+"""Tests for geo_optimizer.core.llm_client.
+
+Provider-agnostic LLM client per OpenAI, Anthropic, Groq.
+Tutto mockato — zero chiamate reali.
+"""
+
+from __future__ import annotations
+
+import sys
+import types
+from unittest.mock import Mock
+
+import pytest
+
+import geo_optimizer.core.llm_client as llm_client
+
+
+@pytest.fixture(autouse=True)
+def _mock_openai_module(monkeypatch) -> None:
+    """Mock openai completo."""
+    fake = types.ModuleType("openai")
+    fake.__path__ = ["/fake/openai"]
+
+    class _OpenAI:
+        def __init__(self, api_key: str, timeout: int) -> None:
+            self.api_key = api_key
+            self.timeout = timeout
+
+        class chat:
+            class completions:
+                @staticmethod
+                def create(model: str, messages: list, max_tokens: int) -> Mock:
+                    mock_resp = Mock()
+                    choice = Mock()
+                    choice.message = Mock()
+                    choice.message.configure_mock(content="OpenAI response")
+                    mock_resp.choices = [choice]
+                    mock_resp.model = model
+                    mock_resp.usage = Mock(prompt_tokens=10, completion_tokens=5)
+                    return mock_resp
+
+    fake.OpenAI = _OpenAI
+    fake.types = types.ModuleType("openai.types")
+    fake.types.chat = types.ModuleType("openai.types.chat")
+    fake.types.chat.ChatCompletionSystemMessageParam = Mock
+    fake.types.chat.ChatCompletionUserMessageParam = Mock
+
+    monkeypatch.setitem(sys.modules, "openai", fake)
+    monkeypatch.setitem(sys.modules, "openai.types", fake.types)
+    monkeypatch.setitem(sys.modules, "openai.types.chat", fake.types.chat)
+
+
+@pytest.fixture(autouse=True)
+def _mock_anthropic_module(monkeypatch) -> None:
+    """Mock anthropic."""
+    fake = types.ModuleType("anthropic")
+
+    class _Anthropic:
+        def __init__(self, api_key: str, timeout: int) -> None:
+            self.api_key = api_key
+            self.timeout = timeout
+
+        class messages:
+            @staticmethod
+            def create(**kwargs) -> Mock:
+                mock_resp = Mock()
+                mock_resp.content = [Mock(text="Anthropic response")]
+                mock_resp.model = kwargs.get("model", "claude-sonnet-4-20250514")
+                mock_resp.usage = Mock(input_tokens=10, output_tokens=5)
+                return mock_resp
+
+    fake.Anthropic = _Anthropic
+    monkeypatch.setitem(sys.modules, "anthropic", fake)
+
+
+@pytest.fixture(autouse=True)
+def _mock_groq_module(monkeypatch) -> None:
+    """Mock groq (usa openai.types.chat come _query_groq)."""
+    fake = types.ModuleType("groq")
+
+    class _Groq:
+        def __init__(self, api_key: str, timeout: int) -> None:
+            self.api_key = api_key
+            self.timeout = timeout
+
+        class chat:
+            class completions:
+                @staticmethod
+                def create(model: str, messages: list, max_tokens: int) -> Mock:
+                    mock_resp = Mock()
+                    choice = Mock()
+                    choice.message = Mock()
+                    choice.message.configure_mock(content="Groq response")
+                    mock_resp.choices = [choice]
+                    mock_resp.model = model
+                    mock_resp.usage = Mock(prompt_tokens=10, completion_tokens=5)
+                    return mock_resp
+
+    fake.Groq = _Groq
+    fake.types = types.ModuleType("groq.types")
+    fake.types.chat = types.ModuleType("groq.types.chat")
+
+    monkeypatch.setitem(sys.modules, "groq", fake)
+    monkeypatch.setitem(sys.modules, "groq.types", fake.types)
+    monkeypatch.setitem(sys.modules, "groq.types.chat", fake.types.chat)
+
+
+@pytest.fixture(autouse=True)
+def _mock_env(monkeypatch) -> None:
+    """Isola environment."""
+    monkeypatch.delenv("GEO_LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("GEO_LLM_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.setenv("GEO_LLM_MODEL", "test-model")
+
+
+# ─── Tests ────────────────────────────────────────────────────────────────────
+
+
+class TestDetectProvider:
+    """Test detect_provider()."""
+
+    def test_detect_provider_openai_env(self, _mock_env, monkeypatch) -> None:
+        """detect_provider con OPENAI_API_KEY (linee 54-63)."""
+        monkeypatch.setenv("OPENAI_API_KEY", "env_key")
+        provider, api_key = llm_client.detect_provider()
+        assert provider == "openai"
+        assert api_key == "env_key"
+
+
+class TestQueryLLM:
+    """Test query_llm()."""
+
+    def test_query_llm_no_provider_error(self, _mock_env) -> None:
+        """query_llm senza provider (linee 68-71)."""
+        resp = llm_client.query_llm("test")
+        assert resp.error is not None
+        assert "No LLM provider configured" in resp.error
+
+    def test_query_llm_openai_import_error(self, _mock_env, monkeypatch) -> None:
+        """query_llm con OpenAI non installato (ImportError 117-118)."""
+        sys.modules.pop("openai", None)
+        monkeypatch.setenv("OPENAI_API_KEY", "fake_key")
+        resp = llm_client.query_llm("test", provider="openai", api_key="fake_key")
+        assert resp.error is not None
+        assert "openai not installed" in resp.error
+
+    def test_query_llm_openai_success_with_system(self, _mock_env, monkeypatch) -> None:
+        """OpenAI success con system param (linee 90-107, 120-135, 124)."""
+        monkeypatch.setenv("OPENAI_API_KEY", "fake_key")
+        resp = llm_client.query_llm("test", provider="openai", api_key="fake_key", system="system prompt")
+        assert resp.text == "OpenAI response"
+        assert resp.provider == "openai"
+
+    def test_query_llm_anthropic_success_with_system(self, _mock_env, monkeypatch) -> None:
+        """Anthropic success con system param (linee 102-103, 147-163, 151)."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "fake_key")
+        resp = llm_client.query_llm("test", provider="anthropic", api_key="fake_key", system="system prompt")
+        assert resp.text == "Anthropic response"
+        assert resp.provider == "anthropic"
+
+    def test_query_llm_groq_success(self, _mock_env, monkeypatch) -> None:
+        """Groq success (linee 104-105, 167-194, 104-107)."""
+        monkeypatch.setenv("GROQ_API_KEY", "groq_key")
+        resp = llm_client.query_llm("test", provider="groq", api_key="groq_key")
+        assert resp.text == "Groq response"
+        assert resp.provider == "groq"
