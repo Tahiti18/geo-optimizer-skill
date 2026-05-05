@@ -1,9 +1,12 @@
-"""Tests for MCP server tools not covered by test_mcp.py.
+"""
+Tests for MCP server tools not covered by test_mcp.py.
 
 This file fills coverage gaps for:
 - geo_citability fetch error path
 - geo_compare (happy and error paths)
 - geo_negative_signals (happy path)
+
+ Richiede: pip install geo-optimizer-skill[mcp]
 """
 
 from __future__ import annotations
@@ -12,6 +15,9 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# Skip se mcp non installato
+pytest.importorskip("mcp", reason="mcp non installato (pip install geo-optimizer-skill[mcp])")
 
 from geo_optimizer.mcp.server import (
     geo_citability,
