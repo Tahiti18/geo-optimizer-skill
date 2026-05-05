@@ -5,6 +5,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · [SemVer](https://semv
 
 ---
 
+
+## [4.10.1] — 2026-05-05
+
+### Maintenance
+
+- Improved test coverage for site-wide semantic coherence orchestration.
+- Added focused coverage for competitive narrative analysis.
+- Added focused MCP server tests for selected tool paths.
+- Added provider-isolated LLM client tests with mocked OpenAI, Anthropic and Groq flows.
+- Strengthened mocked validation around external integrations to avoid real network or provider calls in tests.
+
+### Testing
+
+- `site_coherence.py` module coverage reached 98%.
+- `competitive_narrative.py` module coverage reached 82%.
+- Combined `mcp/server.py` coverage reached 66%.
+- `llm_client.py` module coverage reached 83%.
+- Full test suite validated across supported Python versions through CI.
+
+### Notes
+
+- No breaking changes.
+- No public CLI behavior changes expected.
+- This is a maintenance release focused on reliability, coverage and CI confidence.
+
+---
 ## [4.10.0] — 2026-04-29
 
 ### Added
