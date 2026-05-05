@@ -82,7 +82,7 @@ def geo_audit(url: str) -> str:
     # Anti-SSRF validation
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.audit import run_full_audit
@@ -130,7 +130,7 @@ def geo_fix(url: str, only: str = "") -> str:
 
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.fixer import run_all_fixes
@@ -216,7 +216,7 @@ def geo_citability(url: str) -> str:
 
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from bs4 import BeautifulSoup
@@ -226,7 +226,7 @@ def geo_citability(url: str) -> str:
 
         r, err = fetch_url(url)
         if err or not r:
-            return json.dumps({"error": f"Cannot reach {url}: {err}"})
+            return json.dumps({"error": f"Cannot reach {url}: {err}", "url": url})
 
         soup = BeautifulSoup(r.text, "html.parser")
         result = audit_citability(soup, url)
@@ -374,7 +374,7 @@ def geo_ai_discovery(url: str) -> str:
     url = _normalize_url(url)
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.audit import audit_ai_discovery
@@ -405,7 +405,7 @@ def geo_check_bots(url: str) -> str:
     url = _normalize_url(url)
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.audit import audit_robots_txt
@@ -473,7 +473,7 @@ def geo_trust_score(url: str) -> str:
     url = _normalize_url(url)
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.audit import run_full_audit
@@ -521,7 +521,7 @@ def geo_negative_signals(url: str) -> str:
     url = _normalize_url(url)
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.audit import run_full_audit
@@ -552,7 +552,7 @@ def geo_factual_accuracy(url: str) -> str:
     url = _normalize_url(url)
     safe, reason = validate_public_url(url)
     if not safe:
-        return json.dumps({"error": f"Unsafe URL: {reason}"})
+        return json.dumps({"error": f"Unsafe URL: {reason}", "url": url})
 
     try:
         from geo_optimizer.core.factual_accuracy import run_factual_accuracy_audit

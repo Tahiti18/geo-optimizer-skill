@@ -92,8 +92,16 @@ def query_llm(
         provider = provider or detected_provider
         api_key = api_key or detected_key
 
-    if not provider or not api_key:
-        return LLMResponse(error="No LLM provider configured. Set GEO_LLM_API_KEY or OPENAI_API_KEY.")
+    if not provider and not api_key:
+        return LLMResponse(
+            error="No LLM provider or API key configured. Set GEO_LLM_PROVIDER and GEO_LLM_API_KEY, or set a provider-specific key such as OPENAI_API_KEY."
+        )
+    if not provider:
+        return LLMResponse(error="No LLM provider specified. Set GEO_LLM_PROVIDER or pass provider explicitly.")
+    if not api_key:
+        return LLMResponse(
+            error=f"No API key provided for provider '{provider}'. Set GEO_LLM_API_KEY or the provider-specific API key."
+        )
 
     model = model or os.environ.get("GEO_LLM_MODEL", "") or _PROVIDER_DEFAULTS.get(provider, "")
 
@@ -171,7 +179,7 @@ def _query_groq(prompt: str, *, system: str, api_key: str, model: str, max_token
             ChatCompletionUserMessageParam,
         )
     except ImportError:
-        return LLMResponse(error="groq not installed (pip install groq)")
+        return LLMResponse(error="groq not installed (pip install geo-optimizer-skill[dev])")
 
     try:
         client = Groq(api_key=api_key, timeout=_LLM_TIMEOUT)

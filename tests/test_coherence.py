@@ -135,6 +135,35 @@ class TestSiteCoherenceOrchestrator:
         assert result.pages_analyzed == 0
         assert result.coherence_score == 0
 
+    def test_run_site_coherence_warns_empty_sitemap_in_text_output(self):
+        # Arrange
+        with patch("geo_optimizer.core.site_coherence.fetch_sitemap") as mock_sitemap:
+            mock_sitemap.return_value = []
+
+            import click
+
+            from geo_optimizer.cli.coherence_cmd import _print_text
+            from geo_optimizer.core.site_coherence import run_site_coherence
+
+            result = run_site_coherence("https://example.com/sitemap.xml")
+            capturing = []
+            original_echo = click.echo
+
+            def mock_echo(msg, *args, **kwargs):
+                capturing.append(str(msg))
+
+            click.echo = mock_echo
+
+            # Act
+            _print_text(result)
+
+            # Restore
+            click.echo = original_echo
+
+        # Assert
+        assert result.pages_analyzed == 0
+        assert "⚠️  No pages analyzed" in capturing or "No pages analyzed" in " ".join(capturing)
+
     def test_run_site_coherence_with_realistic_sitemap(self):
         # Arrange
         entries = [

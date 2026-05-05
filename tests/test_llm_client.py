@@ -141,11 +141,24 @@ class TestDetectProvider:
 class TestQueryLLM:
     """Test query_llm()."""
 
-    def test_query_llm_no_provider_error(self, _mock_env) -> None:
-        """query_llm senza provider (linee 68-71)."""
+    def test_query_llm_no_provider_and_no_key(self, _mock_env) -> None:
+        """query_llm senza provider e senza API key (linee 95-98)."""
         resp = llm_client.query_llm("test")
         assert resp.error is not None
-        assert "No LLM provider configured" in resp.error
+        assert "No LLM provider or API key configured" in resp.error
+
+    def test_query_llm_no_provider_only(self, _mock_env) -> None:
+        """query_llm con API key presente ma provider mancante (linee 99-100)."""
+        resp = llm_client.query_llm("test", provider="", api_key="fake_key")
+        assert resp.error is not None
+        assert "No LLM provider specified" in resp.error
+
+    def test_query_llm_no_api_key_only(self, _mock_env, monkeypatch) -> None:
+        """query_llm con provider presente ma API key mancante (linee 101-102)."""
+        monkeypatch.setenv("GEO_LLM_PROVIDER", "openai")
+        resp = llm_client.query_llm("test", provider="openai", api_key="")
+        assert resp.error is not None
+        assert "No API key provided for provider 'openai'" in resp.error
 
     def test_query_llm_openai_import_error(self, _mock_env, monkeypatch) -> None:
         """query_llm con OpenAI non installato (ImportError 117-118)."""
@@ -154,6 +167,15 @@ class TestQueryLLM:
         resp = llm_client.query_llm("test", provider="openai", api_key="fake_key")
         assert resp.error is not None
         assert "openai not installed" in resp.error
+
+    def test_query_llm_groq_import_error(self, _mock_env, monkeypatch) -> None:
+        """query_llm con Groq non installato (ImportError 181-182)."""
+        sys.modules.pop("groq", None)
+        monkeypatch.setenv("GROQ_API_KEY", "fake_key")
+        resp = llm_client.query_llm("test", provider="groq", api_key="fake_key")
+        assert resp.error is not None
+        assert "groq not installed" in resp.error
+        assert "[dev]" in resp.error, "Groq ImportError message should reference geo-optimizer-skill[dev]"
 
     def test_query_llm_openai_success_with_system(self, _mock_env, monkeypatch) -> None:
         """OpenAI success con system param (linee 90-107, 120-135, 124)."""

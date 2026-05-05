@@ -109,12 +109,12 @@ def _check_ip_blocked(ip_str: str) -> tuple[bool, str | None]:
         if ip_obj in network:
             # Fix M-3: generic message to user, detailed log at DEBUG only
             logger.debug("Blocked IP %s in network %s", ip_str, network)
-            return True, "URL points to a non-public address."
+            return True, "URL points to a non-public address. Please use a public URL (e.g., https://example.com)."
 
     # Fallback: catch private networks not in the explicit blocklist
     if _is_ip_blocked(ip_obj):
         logger.debug("Blocked IP %s (private/reserved per stdlib)", ip_str)
-        return True, "URL points to a non-public address."
+        return True, "URL points to a non-public address. Please use a public URL (e.g., https://example.com)."
 
     return False, None
 

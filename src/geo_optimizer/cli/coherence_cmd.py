@@ -48,6 +48,10 @@ def _print_text(result) -> None:
     click.echo("  SEMANTIC COHERENCE ANALYSIS")
     click.echo("🔍 " * 20)
     click.echo(f"\n  Pages analyzed: {result.pages_analyzed}")
+
+    if result.pages_analyzed == 0:
+        click.echo("  ⚠️  No pages analyzed — sitemap was empty or no extracts found")
+
     click.echo(f"  Coherence score: {result.coherence_score}/100")
     click.echo(f"  Language consistency: {result.language_consistency:.0%}")
 

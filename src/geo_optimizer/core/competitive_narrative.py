@@ -34,6 +34,7 @@ class CompetitorNarrative:
     content_gaps: list[str] = field(default_factory=list)  # narrative elements missing
     confidence: float = 0.0  # LLM confidence in this analysis
     score: int = 0  # GEO score (from audit), for display purposes
+    has_error: bool = False  # LLM analysis failed for this competitor
 
 
 @dataclass
@@ -375,6 +376,7 @@ def format_competitive_narrative(result: CompetitiveNarrativeResult) -> dict[str
                 "credibility_signals": c.credibility_signals,
                 "content_gaps": c.content_gaps,
                 "confidence": c.confidence,
+                "has_error": c.has_error,
             }
             for c in result.competitors
         ],
