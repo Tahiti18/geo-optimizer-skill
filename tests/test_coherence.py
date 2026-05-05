@@ -133,6 +133,7 @@ class TestSiteCoherenceOrchestrator:
         # Assert
         assert result.checked is True
         assert result.pages_analyzed == 0
+        assert result.coherence_score == 0
 
     def test_run_site_coherence_with_realistic_sitemap(self):
         # Arrange
