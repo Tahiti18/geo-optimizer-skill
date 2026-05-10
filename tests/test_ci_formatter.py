@@ -72,7 +72,7 @@ class TestSarifFormatter:
 
         assert driver["name"] == "GEO Optimizer"
         assert "rules" in driver
-        assert len(driver["rules"]) == 5
+        assert len(driver["rules"]) == 7  # robots, llms, schema, meta, content, signals, ai_discovery
 
     def test_sarif_contiene_findings(self):
         """SARIF contiene risultati per check falliti."""
@@ -119,6 +119,14 @@ class TestSarifFormatter:
                 "content.has_numbers": True,
                 "content.has_links": True,
                 "content.word_count": 500,
+                "signals.has_lang": True,
+                "signals.has_rss": True,
+                "signals.has_freshness": True,
+                "ai_discovery.has_well_known_ai": True,
+                "ai_discovery.has_summary": True,
+                "ai_discovery.summary_valid": True,
+                "ai_discovery.has_faq": True,
+                "ai_discovery.has_service": True,
             }
         )
         data = json.loads(format_audit_sarif(result))
@@ -141,12 +149,12 @@ class TestJunitFormatter:
         assert root.tag == "testsuites"
 
     def test_junit_contiene_test_suites(self):
-        """JUnit contiene 6 test suite (5 originali + brand_entity v4.3)."""
+        """JUnit contiene 8 test suite (robots, llms, schema, meta, content, brand_entity, signals, ai_discovery)."""
         result = _make_result()
         root = ET.fromstring(format_audit_junit(result))
 
         testsuites = root.findall("testsuite")
-        assert len(testsuites) == 6
+        assert len(testsuites) == 8
 
     def test_junit_contiene_failures(self):
         """JUnit contiene failures per check non superati."""
@@ -193,6 +201,14 @@ class TestJunitFormatter:
                 "content.has_numbers": True,
                 "content.has_links": True,
                 "content.word_count": 500,
+                "signals.has_lang": True,
+                "signals.has_rss": True,
+                "signals.has_freshness": True,
+                "ai_discovery.has_well_known_ai": True,
+                "ai_discovery.has_summary": True,
+                "ai_discovery.summary_valid": True,
+                "ai_discovery.has_faq": True,
+                "ai_discovery.has_service": True,
             }
         )
         # v4.3: sito ottimizzato ha brand_entity con segnali forti (score >= 50%)

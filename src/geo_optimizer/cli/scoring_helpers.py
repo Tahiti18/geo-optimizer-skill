@@ -6,6 +6,9 @@ v4.0: delegates to core/scoring.py for consistency and per-category breakdown.
 from __future__ import annotations
 
 from geo_optimizer.core.scoring import (
+    _score_ai_discovery as ai_discovery_score_impl,
+)
+from geo_optimizer.core.scoring import (
     _score_brand_entity as brand_entity_score_impl,
 )
 from geo_optimizer.core.scoring import (
@@ -62,3 +65,8 @@ def signals_score(r: AuditResult) -> int:
 def brand_entity_score(r: AuditResult) -> int:
     """Brand & Entity score v4.3 — delegates to core/scoring.py."""
     return brand_entity_score_impl(r.brand_entity) if r.brand_entity else 0
+
+
+def ai_discovery_score(r: AuditResult) -> int:
+    """AI Discovery score — delegates to core/scoring.py."""
+    return ai_discovery_score_impl(r.ai_discovery) if r.ai_discovery else 0
