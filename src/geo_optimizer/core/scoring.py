@@ -13,9 +13,13 @@ from geo_optimizer.models.config import (
     CONTENT_MIN_WORDS,
     LLMS_DEPTH_HIGH_WORDS,
     LLMS_DEPTH_WORDS,
+    NEGATIVE_PENALTY_HIGH,
+    NEGATIVE_PENALTY_LOW,
+    NEGATIVE_PENALTY_MED,
     ROBOTS_PARTIAL_SCORE,
     SCORE_BANDS,
     SCORING,
+    XROBOTS_NOINDEX_PENALTY,
 )
 from geo_optimizer.models.results import (
     AiDiscoveryResult,
@@ -23,6 +27,7 @@ from geo_optimizer.models.results import (
     ContentResult,
     LlmsTxtResult,
     MetaResult,
+    NegativeSignalsResult,
     RobotsResult,
     SchemaResult,
     SignalsResult,
@@ -40,9 +45,12 @@ def compute_geo_score(
     signals: SignalsResult | None = None,
     ai_discovery: AiDiscoveryResult | None = None,
     brand_entity: BrandEntityResult | None = None,
+    negative_signals: NegativeSignalsResult | None = None,
 ) -> int:
     """Compute the GEO score 0-100 from SCORING weights (v4.0)."""
-    breakdown = compute_score_breakdown(robots, llms, schema, meta, content, signals, ai_discovery, brand_entity)
+    breakdown = compute_score_breakdown(
+        robots, llms, schema, meta, content, signals, ai_discovery, brand_entity, negative_signals
+    )
     total = sum(breakdown.values())
     # Fix #316: report overflow to detect misalignments in SCORING weights
     if total > 100:
@@ -60,6 +68,7 @@ def compute_score_breakdown(
     signals: SignalsResult | None = None,
     ai_discovery: AiDiscoveryResult | None = None,
     brand_entity: BrandEntityResult | None = None,
+    negative_signals: NegativeSignalsResult | None = None,
 ) -> dict[str, int]:
     """Return the score breakdown by category."""
     return {
@@ -71,6 +80,7 @@ def compute_score_breakdown(
         "signals": _score_signals(signals) if signals is not None else 0,
         "ai_discovery": _score_ai_discovery(ai_discovery) if ai_discovery is not None else 0,
         "brand_entity": _score_brand_entity(brand_entity) if brand_entity is not None else 0,
+        "negative_penalty": _penalty_negative_signals(negative_signals),
     }
 
 
@@ -121,16 +131,35 @@ def _score_schema(schema) -> int:
 
     Schema richness (Growth Marshal Feb 2026): a schema with only @type + name + url
     is generic and unhelpful. A schema with 5+ relevant attributes → full points.
+    Schema completeness (gap #3): types present but missing required fields get partial credit.
     """
     s = SCORING["schema_any_valid"] if schema.any_schema_found else 0
     # Schema richness: rewards rich attribute schemas, penalizes generic ones
     # Fix #394: intermediate step for richness (avg >= 4 → 2pt)
     # Fix M-5: floor guard on richness score
     s += max(0, min(schema.schema_richness_score, SCORING["schema_richness"]))
-    s += SCORING["schema_faq"] if schema.has_faq else 0
-    s += SCORING["schema_article"] if schema.has_article else 0
-    s += SCORING["schema_organization"] if schema.has_organization else 0
-    s += SCORING["schema_website"] if schema.has_website else 0
+
+    incomplete = getattr(schema, "incomplete_schema_types", [])
+
+    # FAQPage: 3pt full, 1pt if incomplete (missing mainEntity)
+    if schema.has_faq:
+        s += 1 if "FAQPage" in incomplete else SCORING["schema_faq"]
+
+    # Article subtypes: 3pt full, 1pt if incomplete (missing headline or author)
+    if schema.has_article:
+        article_incomplete = any(
+            t in incomplete for t in ("Article", "BlogPosting", "NewsArticle", "TechArticle", "ScholarlyArticle")
+        )
+        s += 1 if article_incomplete else SCORING["schema_article"]
+
+    # Organization: 3pt full, 1pt if incomplete (missing name or url)
+    if schema.has_organization:
+        s += 1 if "Organization" in incomplete else SCORING["schema_organization"]
+
+    # WebSite: 2pt full, 1pt if incomplete (missing url or name)
+    if schema.has_website:
+        s += 1 if "WebSite" in incomplete else SCORING["schema_website"]
+
     s += SCORING["schema_sameas"] if schema.has_sameas else 0
     return int(s)
 
@@ -141,6 +170,9 @@ def _score_meta(meta) -> int:
     s += SCORING["meta_description"] if meta.has_description else 0
     s += SCORING["meta_canonical"] if meta.has_canonical else 0
     s += SCORING["meta_og"] if (meta.has_og_title and meta.has_og_description) else 0
+    # X-Robots-Tag: noindex via HTTP header overrides canonical — AI crawlers skip this page
+    if getattr(meta, "x_robots_noindex", False):
+        s = max(0, s - XROBOTS_NOINDEX_PENALTY)
     return s
 
 
@@ -175,6 +207,20 @@ def _score_ai_discovery(ai_discovery) -> int:
     s += SCORING["ai_discovery_faq"] if ai_discovery.has_faq else 0
     s += SCORING["ai_discovery_service"] if ai_discovery.has_service else 0
     return s
+
+
+def _penalty_negative_signals(negative_signals) -> int:
+    """Return a negative score adjustment based on detected negative signals (gap #1)."""
+    if negative_signals is None or not getattr(negative_signals, "checked", False):
+        return 0
+    severity = getattr(negative_signals, "severity", "clean")
+    if severity == "high":
+        return -NEGATIVE_PENALTY_HIGH
+    if severity == "medium":
+        return -NEGATIVE_PENALTY_MED
+    if severity == "low":
+        return -NEGATIVE_PENALTY_LOW
+    return 0
 
 
 def _score_brand_entity(brand_entity) -> int:
