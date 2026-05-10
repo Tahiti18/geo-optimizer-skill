@@ -8,8 +8,12 @@ from __future__ import annotations
 
 import json  # noqa: F401 (available for future extensions)
 import re  # noqa: F401 (available for future extensions)
+from typing import TYPE_CHECKING
 
-from geo_optimizer.models.results import WebMcpResult
+from geo_optimizer.models.results import SchemaResult, WebMcpResult
+
+if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
 
 
 def _extract_actions(schema_obj, action_types: set) -> None:
@@ -43,7 +47,7 @@ def _extract_actions(schema_obj, action_types: set) -> None:
             _extract_actions(item, action_types)
 
 
-def audit_webmcp_readiness(soup, raw_html: str, schema_result) -> WebMcpResult:
+def audit_webmcp_readiness(soup: BeautifulSoup | None, raw_html: str, schema_result: SchemaResult) -> WebMcpResult:
     """Check WebMCP readiness and agent-readiness signals (#233).
 
     Analyzes:

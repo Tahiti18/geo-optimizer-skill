@@ -116,7 +116,7 @@ class FileCache:
         shutil.rmtree(self.cache_dir)
         return count
 
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, int]:
         """Cache statistics: file count, total size."""
         if not self.cache_dir.exists():
             return {"files": 0, "size_bytes": 0}

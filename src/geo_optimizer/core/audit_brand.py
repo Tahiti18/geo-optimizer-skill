@@ -7,9 +7,13 @@ Works only on already-fetched data, zero HTTP requests.
 from __future__ import annotations
 
 from collections import Counter
+from typing import TYPE_CHECKING
 
 from geo_optimizer.models.config import ABOUT_LINK_PATTERNS, BRAND_LEGAL_SUFFIXES, KG_PILLAR_DOMAINS
 from geo_optimizer.models.results import BrandEntityResult, ContentResult, MetaResult, SchemaResult
+
+if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
 
 
 def _flatten_graph(raw_schema: dict) -> list[dict]:
@@ -45,7 +49,7 @@ def _normalize_brand_name(name: str) -> str:
 
 
 def audit_brand_entity(
-    soup, schema_result: SchemaResult, meta_result: MetaResult, content_result: ContentResult
+    soup: BeautifulSoup | None, schema_result: SchemaResult, meta_result: MetaResult, content_result: ContentResult
 ) -> BrandEntityResult:
     """Analyze brand identity and entity signals for AI perception (v4.3).
 

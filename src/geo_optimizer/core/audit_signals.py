@@ -6,10 +6,15 @@ Extracted from core/audit.py for maintainability (#402).
 
 from __future__ import annotations
 
-from geo_optimizer.models.results import SignalsResult
+from typing import TYPE_CHECKING
+
+from geo_optimizer.models.results import SchemaResult, SignalsResult
+
+if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
 
 
-def audit_signals(soup, schema_result) -> SignalsResult:
+def audit_signals(soup: BeautifulSoup | None, schema_result: SchemaResult) -> SignalsResult:
     """Compute technical signals: lang, RSS, freshness.
 
     Args:

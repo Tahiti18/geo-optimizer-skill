@@ -6,10 +6,15 @@ Extracted from core/audit.py for maintainability (#402).
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from geo_optimizer.models.results import MetaResult
 
+if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
 
-def audit_meta_tags(soup, url: str) -> MetaResult:
+
+def audit_meta_tags(soup: BeautifulSoup | None, url: str) -> MetaResult:
     """Check SEO/GEO meta tags. Returns MetaResult."""
     result = MetaResult()
 

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from geo_optimizer.models.results import ContentResult
 
+if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
 
-def audit_content_quality(soup, url: str, soup_clean=None) -> ContentResult:
+
+def audit_content_quality(soup: BeautifulSoup | None, url: str, soup_clean: BeautifulSoup | None = None) -> ContentResult:
     """Check content quality for GEO. Returns ContentResult.
 
     Args:

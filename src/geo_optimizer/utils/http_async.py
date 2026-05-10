@@ -157,10 +157,10 @@ async def fetch_url_async(
 
 
 async def fetch_urls_async(
-    urls: list,
+    urls: list[str],
     timeout: int = 10,
     max_size: int = MAX_RESPONSE_SIZE,
-) -> dict:
+) -> dict[str, tuple[object | None, str | None]]:
     """Parallel fetch of multiple URLs with a single httpx client.
 
     Args:
