@@ -5,6 +5,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · [SemVer](https://semv
 
 ---
 
+## [4.10.3] — 2026-05-10
+
+### Added
+- **Negative-Signal Penalty Framework** — GEO score now decreases when negative signals are detected: `X-Robots-Tag` headers restricting AI bots, `noai` / `noimageai` meta directives, and excessively high `Crawl-delay` values.
+- **Crawl-Delay Parsing** — `robots.txt` parser now recognizes the `Crawl-delay` directive per RFC 9309-style user-agent blocks.
+- **Freshness-Aware URL Ordering** — `llms.txt` generator uses sitemap `changefreq` and crawl-delay context to prioritize fresher pages.
+- **X-Robots-Tag Detection** — audit pipeline inspects HTTP response headers for bot-specific disallow or noindex rules.
+- **noai / noimageai Detection** — scans `<meta>` tags for AI-exclusion directives and records them as explicit negative signals.
+- **Schema Completeness** — validates required schema properties (`@context`, `@type`, `url`) and surfaces missing fields in audit results.
+- **Brand Sentiment Wiring** — recommendation priority now factors in brand-entity sentiment scores.
+- **Priority-Aware Batch Processing** — when URL lists exceed the batch limit, selection is prioritized by freshness, brand weight, and score impact instead of FIFO.
+- **SARIF & JUnit Enrichment** — SARIF output includes `signals` properties per rule; JUnit reports expose `ai_discovery` custom properties.
+- **CLI Input Validation** — `--threshold` enforces `[0, 100]` range; `--retention-days` rejects non-positive integers.
+- **i18n Guardrail** — `--lang` emits a warning when used before the full i18n subsystem is active.
+
+### Changed
+- **Config Centralization** — magic numbers, timeouts, score weights, and bot display strings moved to named constants in `models/config.py`.
+- **Type Annotations** — added across `core/` modules; fixed module-level logger names; added `__all__` to subpackages.
+
+### Fixed
+- `brand_entity` max-score calculation now correctly reflects the adjusted ceiling after penalties are applied.
+- SARIF serialization edge case where `brand_entity` max-score was emitted as a string instead of a float.
+
+### Tests
+- Expanded edge-case coverage for `soup=None` in schema validators and `FileCache` eviction logic.
+- Full suite validated across supported Python versions through CI.
+
+### Notes
+- No breaking CLI changes.
+- Existing audits may return slightly lower scores if previously ignored negative signals are now present — this is intentional and improves accuracy.
+
+---
 
 ## [4.10.1] — 2026-05-05
 
