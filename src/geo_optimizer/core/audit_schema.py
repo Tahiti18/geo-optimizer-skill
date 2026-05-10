@@ -24,6 +24,8 @@ _logger = logging.getLogger(__name__)
 def audit_schema(soup: BeautifulSoup | None, url: str) -> SchemaResult:
     """Check JSON-LD schema on homepage. Returns SchemaResult."""
     result = SchemaResult()
+    if soup is None:
+        return result
 
     scripts = soup.find_all("script", attrs={"type": "application/ld+json"})
     if not scripts:

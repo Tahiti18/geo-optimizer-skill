@@ -259,7 +259,7 @@ def _content_findings(result: AuditResult) -> list[dict]:
 
 
 def _signals_findings(result: AuditResult) -> list[dict]:
-    findings = []
+    findings: list[dict] = []
     if not result.signals:
         return findings
     if not result.signals.has_lang:
@@ -281,7 +281,7 @@ def _signals_findings(result: AuditResult) -> list[dict]:
 
 
 def _ai_discovery_findings(result: AuditResult) -> list[dict]:
-    findings = []
+    findings: list[dict] = []
     if not result.ai_discovery:
         return findings
     if not result.ai_discovery.has_well_known_ai:

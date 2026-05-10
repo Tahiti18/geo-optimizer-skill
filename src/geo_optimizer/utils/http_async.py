@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import contextvars
+from typing import Any
 
 from geo_optimizer.models.config import HEADERS
 from geo_optimizer.utils.http import MAX_RESPONSE_SIZE
@@ -160,7 +161,7 @@ async def fetch_urls_async(
     urls: list[str],
     timeout: int = 10,
     max_size: int = MAX_RESPONSE_SIZE,
-) -> dict[str, tuple[object | None, str | None]]:
+) -> dict[str, tuple[Any, str | None]]:
     """Parallel fetch of multiple URLs with a single httpx client.
 
     Args:
