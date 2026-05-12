@@ -49,7 +49,7 @@ export const researchSources: ResearchSource[] = [
       'Introduces automated pipelines that optimize content for generative engines without human intervention, using reinforcement learning from LLM feedback.',
     howWeUseIt:
       'Informs the design of the `geo fix` command and the auto-fix generation layer: robots.txt, llms.txt, schema, and meta tag suggestions are generated using the same structural principles.',
-    link: 'https://openreview.net/forum?id=autogeo2026',
+    link: 'https://openreview.net/forum?id=K8EinVWtUB',
     linkLabel: 'Read paper',
   },
   {

@@ -35,18 +35,18 @@ const typeLabels: Record<string, string> = {
 
   <div class="mt-4 space-y-4">
     <div>
-      <h4 class="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted mb-1">Finding</h4>
+      <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted mb-1">Finding</p>
       <p class="text-sm text-text-secondary leading-relaxed">{source.finding}</p>
     </div>
 
     <div>
-      <h4 class="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted mb-1">How GEO Optimizer uses it</h4>
+      <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted mb-1">How GEO Optimizer uses it</p>
       <p class="text-sm text-text-secondary leading-relaxed">{source.howWeUseIt}</p>
     </div>
 
     {source.metrics && (
       <div class="pt-2">
-        <h4 class="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted mb-2">Key metrics</h4>
+        <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted mb-2">Key metrics</p>
         <dl class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {source.metrics.map((m) => (
             <div class="rounded-lg border border-border bg-bg-base p-2.5">
