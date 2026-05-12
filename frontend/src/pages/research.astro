@@ -1,33 +1,62 @@
 ---
 import Shell from '../components/Shell.astro';
+import ResearchCard from '../components/content/ResearchCard.astro';
+import { researchSources, researchClosing } from '../lib/researchContent';
 ---
 
-<Shell title="Research — GEO Optimizer">
-  <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl md:text-4xl font-bold">Research</h1>
-    <p class="mt-4 text-text-secondary">
-      GEO Optimizer is built on peer-reviewed research and industry reports.
-    </p>
+<Shell title="Research — GEO Optimizer" description="The research foundation behind GEO Optimizer: peer-reviewed papers, benchmarks, and industry reports that inform every scoring decision.">
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+    {/* Header */}
+    <header class="max-w-2xl mb-14 md:mb-20">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-text-muted uppercase tracking-wider">
+        <span>GEO Optimizer</span>
+        <span class="w-1 h-1 rounded-full bg-text-muted" />
+        <span>Research</span>
+      </div>
 
-    <div class="mt-10 space-y-4">
-      <div class="p-5 rounded-lg border border-border bg-bg-surface">
-        <h3 class="font-display font-semibold">Princeton KDD 2024</h3>
-        <p class="mt-1 text-sm text-text-secondary">
-          Foundations of Generative Engine Optimization: what signals LLMs use to cite sources.
-        </p>
-      </div>
-      <div class="p-5 rounded-lg border border-border bg-bg-surface">
-        <h3 class="font-display font-semibold">AutoGEO ICLR 2026</h3>
-        <p class="mt-1 text-sm text-text-secondary">
-          Automated GEO optimization pipelines and evaluation metrics.
-        </p>
-      </div>
-      <div class="p-5 rounded-lg border border-border bg-bg-surface">
-        <h3 class="font-display font-semibold">SE Ranking 2025</h3>
-        <p class="mt-1 text-sm text-text-secondary">
-          Industry analysis of AI search visibility factors and ranking signals.
-        </p>
-      </div>
+      <h1 class="mt-3 font-display text-3xl md:text-4xl font-bold text-text-primary leading-tight tracking-tight">
+        Research Foundation
+      </h1>
+
+      <p class="mt-4 text-base md:text-lg text-text-secondary leading-relaxed max-w-2xl">
+        Built on peer-reviewed science, not marketing claims. Every signal in GEO Optimizer is traceable to a published source.
+      </p>
+    </header>
+
+    {/* Type filter legend */}
+    <div class="flex flex-wrap items-center gap-3 mb-8 text-[11px] font-mono text-text-muted">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-accent-teal" />
+        Peer-reviewed paper
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-accent-warning" />
+        Benchmark
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-text-muted" />
+        Industry report
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-accent-success" />
+        Internal analysis
+      </span>
     </div>
-  </section>
+
+    {/* Research cards */}
+    <div class="space-y-6">
+      {researchSources.map((source) => (
+        <ResearchCard source={source} />
+      ))}
+    </div>
+
+    {/* Closing statement */}
+    <div class="mt-14 md:mt-20 max-w-2xl">
+      <blockquote class="pl-5 border-l-2 border-accent-teal">
+        <p class="text-sm font-medium text-text-primary italic leading-relaxed">
+          {researchClosing.statement}
+        </p>
+      </blockquote>
+    </div>
+  </main>
 </Shell>

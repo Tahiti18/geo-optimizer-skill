@@ -1,0 +1,45 @@
+---
+import type { RoadmapPhase as RoadmapPhaseType, RoadmapItem, RoadmapStatus } from '../../lib/roadmapContent';
+
+interface Props {
+  phase: RoadmapPhaseType;
+}
+
+const { phase } = Astro.props;
+
+const statusConfig: Record<RoadmapStatus, { label: string; dot: string; bg: string }> = {
+  available: { label: 'Available', dot: 'bg-accent-success', bg: 'bg-accent-success/5' },
+  'in-progress': { label: 'In progress', dot: 'bg-accent-warning', bg: 'bg-accent-warning/5' },
+  planned: { label: 'Planned', dot: 'bg-accent-teal', bg: 'bg-accent-teal/5' },
+  exploring: { label: 'Exploring', dot: 'bg-text-muted', bg: 'bg-text-muted/5' },
+};
+---
+
+<section class="relative pl-6 md:pl-8">
+  {/* Timeline line */}
+  <div class="absolute left-0 top-0 bottom-0 w-px bg-border" aria-hidden="true"></div>
+
+  {/* Phase header dot */}
+  <div class={`absolute left-[-3px] top-1.5 w-[7px] h-[7px] rounded-full ${phase.statusColor.replace('border-', 'bg-')}`} aria-hidden="true"></div>
+
+  <div class="pb-2">
+    <h2 class="font-display text-lg md:text-xl font-bold text-text-primary">{phase.label}</h2>
+    <p class="mt-0.5 text-sm text-text-muted">{phase.subtitle}</p>
+  </div>
+
+  <div class="mt-4 space-y-3">
+    {phase.items.map((item) => {
+      const cfg = statusConfig[item.status];
+      return (
+        <div class={`rounded-lg border border-border p-4 transition-colors hover:border-accent-teal/20 ${cfg.bg}`}>
+          <div class="flex items-center gap-2 mb-1">
+            <span class={`w-2 h-2 rounded-full ${cfg.dot}`} aria-hidden="true"></span>
+            <span class="text-[10px] font-mono font-semibold uppercase tracking-wider text-text-muted">{cfg.label}</span>
+          </div>
+          <h3 class="text-sm font-semibold text-text-primary">{item.title}</h3>
+          <p class="mt-1 text-sm text-text-secondary leading-relaxed">{item.description}</p>
+        </div>
+      );
+    })}
+  </div>
+</section>

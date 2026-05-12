@@ -1,42 +1,125 @@
 ---
 import Shell from '../components/Shell.astro';
+import RoadmapPhase from '../components/content/RoadmapPhase.astro';
+import { roadmapPhases, releaseCadence } from '../lib/roadmapContent';
 ---
 
-<Shell title="Roadmap — GEO Optimizer">
-  <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl md:text-4xl font-bold">Roadmap</h1>
-    <p class="mt-4 text-text-secondary">Where GEO Optimizer is heading. No dates, just direction.</p>
-
-    <div class="mt-10 space-y-6">
-      <div class="p-6 rounded-xl border-l-4 border-accent-success bg-bg-surface border border-border">
-        <h2 class="font-display font-semibold">Now</h2>
-        <ul class="mt-3 space-y-2 text-sm text-text-secondary">
-          <li>Visual audit dashboard with radar charts</li>
-          <li>Scheduled monitoring with trend tracking</li>
-          <li>REST API for third-party integrations</li>
-          <li>Prompt injection detection</li>
-        </ul>
+<Shell title="Roadmap — GEO Optimizer" description="GEO Optimizer evolves through deliberate releases focused on signal quality, auditability, retrieval visibility, and developer workflows.">
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+    {/* Hero */}
+    <header class="max-w-2xl mb-14 md:mb-20">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-text-muted uppercase tracking-wider">
+        <span>GEO Optimizer</span>
+        <span class="w-1 h-1 rounded-full bg-text-muted" />
+        <span>Roadmap</span>
       </div>
 
-      <div class="p-6 rounded-xl border-l-4 border-accent-teal bg-bg-surface border border-border">
-        <h2 class="font-display font-semibold">Next</h2>
-        <ul class="mt-3 space-y-2 text-sm text-text-secondary">
-          <li>WordPress plugin with admin dashboard</li>
-          <li>Server log analysis for AI crawler activity</li>
-          <li>Multi-site batch audit with CSV export</li>
-          <li>Competitor comparison reports</li>
-        </ul>
-      </div>
+      <h1 class="mt-3 font-display text-3xl md:text-4xl font-bold text-text-primary leading-tight tracking-tight">
+        Roadmap
+      </h1>
 
-      <div class="p-6 rounded-xl border-l-4 border-text-muted bg-bg-surface border border-border">
-        <h2 class="font-display font-semibold">Later</h2>
-        <ul class="mt-3 space-y-2 text-sm text-text-secondary">
-          <li>WebMCP agent-readiness audit</li>
-          <li>Topical cluster architecture analysis</li>
-          <li>Trust Stack signal aggregation</li>
-          <li>Multi-language GEO optimization</li>
-        </ul>
-      </div>
+      <p class="mt-3 text-lg font-medium text-text-secondary italic">
+        Focused waves, not noisy patches.
+      </p>
+
+      <p class="mt-4 text-base text-text-secondary leading-relaxed max-w-2xl">
+        GEO Optimizer evolves through deliberate releases focused on signal quality, auditability, retrieval visibility, and developer workflows.
+      </p>
+    </header>
+
+    {/* Legend */}
+    <div class="flex flex-wrap items-center gap-4 mb-10 text-[11px] font-mono text-text-muted">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-accent-success" />
+        Available
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-accent-warning" />
+        In progress
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-accent-teal" />
+        Planned
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-text-muted" />
+        Exploring
+      </span>
     </div>
-  </section>
+
+    {/* Phases */}
+    <div class="space-y-14 md:space-y-20">
+      {roadmapPhases.map((phase) => (
+        <RoadmapPhase phase={phase} />
+      ))}
+    </div>
+
+    {/* Release cadence */}
+    <section class="mt-16 md:mt-24 border-t border-border pt-10">
+      <h2 class="font-display text-lg md:text-xl font-bold text-text-primary mb-2">
+        Release direction
+      </h2>
+      <p class="text-sm text-text-muted mb-6 max-w-xl">
+        These are planned directions, not rigid promises. Names reflect the thematic focus of each release.
+      </p>
+
+      <div class="flex flex-wrap gap-3">
+        {releaseCadence.map((rel) => {
+          const isAvailable = rel.status === 'available';
+          const isExploring = rel.status === 'exploring';
+          return (
+            <div
+              class={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                isAvailable
+                  ? 'border-accent-success/30 bg-accent-success/5 text-text-primary'
+                  : isExploring
+                    ? 'border-text-muted/30 bg-text-muted/5 text-text-muted'
+                    : 'border-border bg-bg-surface text-text-secondary'
+              }`}
+            >
+              <span class={`w-2 h-2 rounded-full ${isAvailable ? 'bg-accent-success' : isExploring ? 'bg-text-muted' : 'bg-accent-teal'}`} />
+              <span class="font-mono text-xs font-semibold">{rel.version}</span>
+              <span class="text-xs">{rel.name}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+
+    {/* CTA */}
+    <section class="mt-14 md:mt-20 rounded-xl border border-border bg-bg-surface p-6 md:p-8">
+      <h2 class="font-display text-lg font-bold text-text-primary">
+        Want to influence the roadmap?
+      </h2>
+      <p class="mt-2 text-sm text-text-secondary leading-relaxed max-w-xl">
+        GEO Optimizer is open source. The best way to shape its direction is to open an issue, start a discussion, or star the project on GitHub.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-3">
+        <a
+          href="https://github.com/Auriti-Labs/geo-optimizer-skill/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-lg bg-accent-teal px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+        >
+          Open an issue
+        </a>
+        <a
+          href="https://github.com/Auriti-Labs/geo-optimizer-skill/discussions"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:border-accent-teal/30 transition-colors"
+        >
+          Start a discussion
+        </a>
+        <a
+          href="https://github.com/Auriti-Labs/geo-optimizer-skill"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:border-accent-teal/30 transition-colors"
+        >
+          Star on GitHub
+        </a>
+      </div>
+    </section>
+  </main>
 </Shell>
