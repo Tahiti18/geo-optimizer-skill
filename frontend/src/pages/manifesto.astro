@@ -1,25 +1,43 @@
 ---
 import Shell from '../components/Shell.astro';
+import ManifestoSection from '../components/manifesto/ManifestoSection.astro';
+import ManifestoToc from '../components/manifesto/ManifestoToc.astro';
+import { manifestoSections } from '../lib/manifestoContent';
 ---
 
-<Shell title="Manifesto — GEO Optimizer">
-  <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl md:text-4xl font-bold">Manifesto</h1>
-    <div class="mt-8 space-y-6 text-text-secondary leading-relaxed">
-      <p>
-        AI search is not the future. It is the present. ChatGPT, Perplexity, Claude, and Gemini
-        are already deciding which websites get cited and which do not.
+<Shell title="Manifesto — GEO Optimizer" description="The GEO Optimizer Manifesto: why AI search visibility should be auditable, open, and accessible to every website.">
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+    {/* Header editoriale */}
+    <header class="max-w-3xl mb-14 md:mb-20">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-text-muted uppercase tracking-wider">
+        <span>GEO Optimizer</span>
+        <span class="w-1 h-1 rounded-full bg-text-muted" />
+        <span>Manifesto</span>
+      </div>
+
+      <h1 class="mt-3 font-display text-3xl md:text-4xl font-bold text-text-primary leading-tight tracking-tight">
+        The GEO Optimizer Manifesto
+      </h1>
+
+      <p class="mt-4 text-base md:text-lg text-text-secondary leading-relaxed max-w-2xl">
+        Why AI search visibility should be
+        <span class="text-text-primary font-medium">auditable</span>,
+        <span class="text-text-primary font-medium">open</span>, and
+        <span class="text-text-primary font-medium">accessible</span> to every website on the internet.
       </p>
-      <p>
-        The signals are documented. The research is published. But most of the web has no idea.
-      </p>
-      <p>
-        GEO Optimizer exists to make AI visibility auditable, transparent, and accessible to every developer,
-        not just teams with enterprise budgets.
-      </p>
-      <p>
-        We believe that understanding how AI sees your site is a right, not a privilege.
-      </p>
+    </header>
+
+    {/* Layout a due colonne: contenuto + TOC sticky */}
+    <div class="flex flex-col lg:flex-row gap-8 lg:gap-12">
+      {/* TOC mobile + sidebar desktop */}
+      <ManifestoToc sections={manifestoSections} />
+
+      {/* Contenuto principale */}
+      <div class="flex-1 min-w-0 space-y-14 md:space-y-20">
+        {manifestoSections.map((section) => (
+          <ManifestoSection section={section} />
+        ))}
+      </div>
     </div>
-  </section>
+  </main>
 </Shell>
