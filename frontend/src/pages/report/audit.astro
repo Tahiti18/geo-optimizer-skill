@@ -7,5 +7,5 @@ const title = url ? `Audit Report — ${url}` : 'Audit Report';
 ---
 
 <Shell title={title} description="GEO Optimizer audit report">
-  <AuditReportContainer client:load reportId={url} />
+  <AuditReportContainer client:only="react" reportId={url} />
 </Shell>

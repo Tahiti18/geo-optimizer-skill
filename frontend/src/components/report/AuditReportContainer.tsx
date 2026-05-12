@@ -27,19 +27,31 @@ export default function AuditReportContainer({ reportId }: AuditReportContainerP
       return;
     }
 
-    // L'ID è una chiave di cache hex oppure un URL raw.
-    // Se non è hex, lo trattiamo come URL.
-    const isHexId = /^[a-f0-9]{32}$/i.test(reportId);
-    const url = isHexId ? null : decodeURIComponent(reportId);
+    // In una pagina statica i query params non sono disponibili a build time.
+    // Leggiamo l'URL direttamente dal browser quando siamo client-side.
+    let targetUrl: string | null = null;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get('url');
+      if (urlParam) {
+        targetUrl = urlParam;
+      }
+    }
 
-    if (!url) {
+    // Fallback alla prop reportId (cache hash o URL codificato)
+    if (!targetUrl && reportId) {
+      const isHexId = /^[a-f0-9]{32}$/i.test(reportId);
+      targetUrl = isHexId ? null : decodeURIComponent(reportId);
+    }
+
+    if (!targetUrl) {
       setState({ status: 'error', message: 'Report ID not resolvable. Use /report/demo for a sample.' });
       return;
     }
 
     setState({ status: 'loading' });
 
-    fetchAuditReport(url).then((result) => {
+    fetchAuditReport(targetUrl).then((result) => {
       if (result.error) {
         setState({ status: 'error', message: result.error });
       } else if (result.report) {

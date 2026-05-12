@@ -41,8 +41,7 @@ export interface FetchAuditResult {
  */
 export async function fetchAuditReport(url: string): Promise<FetchAuditResult> {
   try {
-    const encodedUrl = encodeURIComponent(url);
-    const res = await fetch(buildApiUrl('/audit', { url: encodedUrl }));
+    const res = await fetch(buildApiUrl('/audit', { url }));
 
     if (!res.ok) {
       let detail = `HTTP ${res.status}`;
