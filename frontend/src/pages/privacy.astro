@@ -112,4 +112,17 @@ import Shell from '../components/Shell.astro';
       </section>
     </div>
   </main>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Privacy Policy — GEO Optimizer",
+    "description": "Privacy policy for GEO Optimizer, covering data processing, legal basis, retention, and user rights.",
+    "url": "https://geoready.dev/privacy",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "GEO Optimizer",
+      "url": "https://geoready.dev"
+    }
+  })} />
 </Shell>

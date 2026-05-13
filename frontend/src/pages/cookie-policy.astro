@@ -131,4 +131,17 @@ import Shell from '../components/Shell.astro';
       </section>
     </div>
   </main>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Cookie Policy — GEO Optimizer",
+    "description": "Cookie policy for GEO Optimizer, covering cookie categories, storage inventory, and consent management.",
+    "url": "https://geoready.dev/cookie-policy",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "GEO Optimizer",
+      "url": "https://geoready.dev"
+    }
+  })} />
 </Shell>
