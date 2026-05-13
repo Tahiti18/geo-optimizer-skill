@@ -26,6 +26,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -50,6 +51,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url=None,
 )
+
+# Directory dei file statici del frontend Astro (buildato in Docker o via env)
+static_dir = Path(os.environ.get("GEO_STATIC_DIR", str(Path(__file__).parent / "static")))
 
 
 # ─── Middleware: POST body size limit ─────────────────────────────────────────
@@ -322,58 +326,53 @@ async def _set_cached(url: str, data: dict) -> str:
         return key
 
 
-@app.get("/", response_class=HTMLResponse)
-async def homepage(request: Request):
-    """Homepage with form for GEO audit."""
-    # Fix #75: retrieve the CSP nonce set by SecurityHeadersMiddleware
-    nonce = getattr(request.state, "csp_nonce", "")
-    return _render_homepage(nonce=nonce)
-
+# @app.get("/", response_class=HTMLResponse)
+# async def homepage(request: Request):
+#     """Homepage with form for GEO audit."""
+#     # Fix #75: retrieve the CSP nonce set by SecurityHeadersMiddleware
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     return _render_homepage(nonce=nonce)
 
 # ─── Pagine statiche informative ──────────────────────────────────────────────
 
 
-@app.get("/roadmap", response_class=HTMLResponse)
-async def roadmap_page(request: Request):
-    """Public roadmap: Now / Next / Later — no dates, just direction."""
-    # Fix #313: propaga nonce per coerenza CSP (template privo di script al momento)
-    nonce = getattr(request.state, "csp_nonce", "")
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    template_path = Path(__file__).parent / "templates" / "roadmap.html"
-    html = template_path.read_text(encoding="utf-8")
-    return html.replace("__NONCE_ATTR__", nonce_attr)
+# @app.get("/roadmap", response_class=HTMLResponse)
+# async def roadmap_page(request: Request):
+#     """Public roadmap: Now / Next / Later — no dates, just direction."""
+#     # Fix #313: propaga nonce per coerenza CSP (template privo di script al momento)
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     nonce_attr = f' nonce="{nonce}"' if nonce else ""
+#     template_path = Path(__file__).parent / "templates" / "roadmap.html"
+#     html = template_path.read_text(encoding="utf-8")
+#     return html.replace("__NONCE_ATTR__", nonce_attr)
 
+# @app.get("/research", response_class=HTMLResponse)
+# async def research_page(request: Request):
+#     """Research foundation: peer-reviewed papers behind the scoring."""
+#     # Fix #313: propaga nonce per coerenza CSP (template privo di script al momento)
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     nonce_attr = f' nonce="{nonce}"' if nonce else ""
+#     template_path = Path(__file__).parent / "templates" / "research.html"
+#     html = template_path.read_text(encoding="utf-8")
+#     return html.replace("__NONCE_ATTR__", nonce_attr)
 
-@app.get("/research", response_class=HTMLResponse)
-async def research_page(request: Request):
-    """Research foundation: peer-reviewed papers behind the scoring."""
-    # Fix #313: propaga nonce per coerenza CSP (template privo di script al momento)
-    nonce = getattr(request.state, "csp_nonce", "")
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    template_path = Path(__file__).parent / "templates" / "research.html"
-    html = template_path.read_text(encoding="utf-8")
-    return html.replace("__NONCE_ATTR__", nonce_attr)
+# @app.get("/manifesto", response_class=HTMLResponse)
+# async def manifesto_page(request: Request):
+#     """The GEO Optimizer Manifesto — philosophy and principles."""
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     nonce_attr = f' nonce="{nonce}"' if nonce else ""
+#     template_path = Path(__file__).parent / "templates" / "manifesto.html"
+#     html = template_path.read_text(encoding="utf-8")
+#     return HTMLResponse(html.replace("__NONCE_ATTR__", nonce_attr))
 
-
-@app.get("/manifesto", response_class=HTMLResponse)
-async def manifesto_page(request: Request):
-    """The GEO Optimizer Manifesto — philosophy and principles."""
-    nonce = getattr(request.state, "csp_nonce", "")
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    template_path = Path(__file__).parent / "templates" / "manifesto.html"
-    html = template_path.read_text(encoding="utf-8")
-    return HTMLResponse(html.replace("__NONCE_ATTR__", nonce_attr))
-
-
-@app.get("/privacy", response_class=HTMLResponse)
-async def privacy_page(request: Request):
-    """Privacy Policy page - GDPR compliant."""
-    nonce = getattr(request.state, "csp_nonce", "")
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    template_path = Path(__file__).parent / "templates" / "privacy.html"
-    html = template_path.read_text(encoding="utf-8")
-    return HTMLResponse(html.replace("__NONCE_ATTR__", nonce_attr))
-
+# @app.get("/privacy", response_class=HTMLResponse)
+# async def privacy_page(request: Request):
+#     """Privacy Policy page - GDPR compliant."""
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     nonce_attr = f' nonce="{nonce}"' if nonce else ""
+#     template_path = Path(__file__).parent / "templates" / "privacy.html"
+#     html = template_path.read_text(encoding="utf-8")
+#     return HTMLResponse(html.replace("__NONCE_ATTR__", nonce_attr))
 
 # ─── Documentazione online (Markdown → HTML) ─────────────────────────────────
 
@@ -507,25 +506,23 @@ def _markdown_to_html(md: str) -> str:
         return html
 
 
-@app.get("/compare", response_class=HTMLResponse)
-async def compare_page(request: Request):
-    """Compare GEO scores of two websites side by side."""
-    nonce = getattr(request.state, "csp_nonce", "")
-    template_path = Path(__file__).parent / "templates" / "compare.html"
-    html = template_path.read_text(encoding="utf-8")
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    return html.replace("__NONCE_ATTR__", nonce_attr)
+# @app.get("/compare", response_class=HTMLResponse)
+# async def compare_page(request: Request):
+#     """Compare GEO scores of two websites side by side."""
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     template_path = Path(__file__).parent / "templates" / "compare.html"
+#     html = template_path.read_text(encoding="utf-8")
+#     nonce_attr = f' nonce="{nonce}"' if nonce else ""
+#     return html.replace("__NONCE_ATTR__", nonce_attr)
 
-
-@app.get("/analyze-competitors", response_class=HTMLResponse)
-async def analyze_competitors_page(request: Request):
-    """Competitive narrative analysis page."""
-    nonce = getattr(request.state, "csp_nonce", "")
-    template_path = Path(__file__).parent / "templates" / "analyze_competitors.html"
-    html = template_path.read_text(encoding="utf-8")
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    return html.replace("__NONCE_ATTR__", nonce_attr)
-
+# @app.get("/analyze-competitors", response_class=HTMLResponse)
+# async def analyze_competitors_page(request: Request):
+#     """Competitive narrative analysis page."""
+#     nonce = getattr(request.state, "csp_nonce", "")
+#     template_path = Path(__file__).parent / "templates" / "analyze_competitors.html"
+#     html = template_path.read_text(encoding="utf-8")
+#     nonce_attr = f' nonce="{nonce}"' if nonce else ""
+#     return html.replace("__NONCE_ATTR__", nonce_attr)
 
 # ─── Stats API esterna (AgencyPilot) ─────────────────────────────────────────
 # Audit counter persisted on an external SQLite DB via REST API
@@ -718,6 +715,24 @@ async def audit_post(request: Request, body: AuditRequest):
         raise HTTPException(status_code=429, detail="Too many requests. Try again soon.")
     return await _run_audit(body.url)
 
+
+
+@app.get("/report/demo", response_class=HTMLResponse)
+async def report_demo_page():
+    """Serve la pagina demo report dal frontend Astro."""
+    file_path = static_dir / "report" / "demo" / "index.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Demo report not found")
+    return HTMLResponse(file_path.read_text(encoding="utf-8"))
+
+
+@app.get("/report/audit", response_class=HTMLResponse)
+async def report_audit_page():
+    """Serve la pagina audit report dal frontend Astro."""
+    file_path = static_dir / "report" / "audit" / "index.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Audit report not found")
+    return HTMLResponse(file_path.read_text(encoding="utf-8"))
 
 @app.get("/report/{report_id}", response_class=HTMLResponse)
 async def report(report_id: str):
@@ -1499,136 +1514,134 @@ def _dict_to_audit_result(data: dict):
 # ─── GEO Optimization endpoints ──────────────────────────────────────────────
 
 
-@app.get("/robots.txt")
-async def robots_txt():
-    """Serve robots.txt ottimizzato per AI crawler."""
-    from fastapi.responses import PlainTextResponse
+# @app.get("/robots.txt")
+# async def robots_txt():
+#     """Serve robots.txt ottimizzato per AI crawler."""
+#     from fastapi.responses import PlainTextResponse
+#
+#     robots = (
+#         "# GEO Optimizer — robots.txt\n"
+#         "User-agent: *\nAllow: /\n\n"
+#         "User-agent: GPTBot\nAllow: /\n"
+#         "User-agent: OAI-SearchBot\nAllow: /\n"
+#         "User-agent: ChatGPT-User\nAllow: /\n"
+#         "User-agent: ClaudeBot\nAllow: /\n"
+#         "User-agent: Claude-SearchBot\nAllow: /\n"
+#         "User-agent: anthropic-ai\nAllow: /\n"
+#         "User-agent: claude-web\nAllow: /\n"
+#         "User-agent: PerplexityBot\nAllow: /\n"
+#         "User-agent: Perplexity-User\nAllow: /\n"
+#         "User-agent: Google-Extended\nAllow: /\n"
+#         "User-agent: Google-CloudVertexBot\nAllow: /\n"
+#         "User-agent: Bingbot\nAllow: /\n"
+#         "User-agent: Applebot-Extended\nAllow: /\n"
+#         "User-agent: Applebot\nAllow: /\n"
+#         "User-agent: DuckAssistBot\nAllow: /\n"
+#         "User-agent: cohere-ai\nAllow: /\n"
+#         "User-agent: Bytespider\nAllow: /\n"
+#         "User-agent: meta-externalagent\nAllow: /\n"
+#         "User-agent: Meta-ExternalFetcher\nAllow: /\n"
+#         "User-agent: facebookexternalhit\nAllow: /\n"
+#         "User-agent: Amazonbot\nAllow: /\n"
+#         "User-agent: AI2Bot\nAllow: /\n"
+#         "User-agent: AI2Bot-Dolma\nAllow: /\n"
+#         "User-agent: xAI-Bot\nAllow: /\n"
+#         "User-agent: PetalBot\nAllow: /\n"
+#         "User-agent: YouBot\nAllow: /\n"
+#         "User-agent: CCBot\nAllow: /\n"
+#     )
+#     return PlainTextResponse(content=robots, media_type="text/plain")
 
-    robots = (
-        "# GEO Optimizer — robots.txt\n"
-        "User-agent: *\nAllow: /\n\n"
-        "User-agent: GPTBot\nAllow: /\n"
-        "User-agent: OAI-SearchBot\nAllow: /\n"
-        "User-agent: ChatGPT-User\nAllow: /\n"
-        "User-agent: ClaudeBot\nAllow: /\n"
-        "User-agent: Claude-SearchBot\nAllow: /\n"
-        "User-agent: anthropic-ai\nAllow: /\n"
-        "User-agent: claude-web\nAllow: /\n"
-        "User-agent: PerplexityBot\nAllow: /\n"
-        "User-agent: Perplexity-User\nAllow: /\n"
-        "User-agent: Google-Extended\nAllow: /\n"
-        "User-agent: Google-CloudVertexBot\nAllow: /\n"
-        "User-agent: Bingbot\nAllow: /\n"
-        "User-agent: Applebot-Extended\nAllow: /\n"
-        "User-agent: Applebot\nAllow: /\n"
-        "User-agent: DuckAssistBot\nAllow: /\n"
-        "User-agent: cohere-ai\nAllow: /\n"
-        "User-agent: Bytespider\nAllow: /\n"
-        "User-agent: meta-externalagent\nAllow: /\n"
-        "User-agent: Meta-ExternalFetcher\nAllow: /\n"
-        "User-agent: facebookexternalhit\nAllow: /\n"
-        "User-agent: Amazonbot\nAllow: /\n"
-        "User-agent: AI2Bot\nAllow: /\n"
-        "User-agent: AI2Bot-Dolma\nAllow: /\n"
-        "User-agent: xAI-Bot\nAllow: /\n"
-        "User-agent: PetalBot\nAllow: /\n"
-        "User-agent: YouBot\nAllow: /\n"
-        "User-agent: CCBot\nAllow: /\n"
-    )
-    return PlainTextResponse(content=robots, media_type="text/plain")
-
-
-@app.get("/llms.txt")
-async def llms_txt():
-    """Serve llms.txt per AI content discovery."""
-    from fastapi.responses import PlainTextResponse
-
-    llms = (
-        "# GEO Optimizer\n\n"
-        "> Open-source toolkit to audit, fix, and optimize any website for AI search engine visibility.\n"
-        "> Scores 0-100 across 8 categories and 47 research-backed methods.\n"
-        "> Based on Princeton KDD 2024 and AutoGEO ICLR 2026 peer-reviewed research.\n"
-        "> MIT License. Free for commercial and personal use.\n\n"
-        "## What GEO Optimizer Does\n\n"
-        "GEO Optimizer audits any publicly accessible URL — regardless of CMS, framework, or hosting — "
-        "and measures how visible that site is to AI search engines like ChatGPT, Perplexity, Claude, and Gemini.\n\n"
-        "The audit covers 8 categories:\n"
-        "1. robots.txt (18pt) — AI bot access configuration for OAI-SearchBot, ClaudeBot, PerplexityBot\n"
-        "2. llms.txt (18pt) — Machine-readable site index for AI agents, depth-graduated scoring\n"
-        "3. Schema JSON-LD (16pt) — Structured data: FAQPage, Article, Organization, WebSite, sameAs\n"
-        "4. Meta Tags (14pt) — Title, description, canonical, Open Graph\n"
-        "5. Content Quality (12pt) — Statistics, citations, headings, word count, front-loading\n"
-        "6. Technical Signals (6pt) — Language, RSS feed, freshness indicators\n"
-        "7. AI Discovery (6pt) — well-known/ai.txt, /ai/summary.json, /ai/faq.json, /ai/service.json\n"
-        "8. Brand & Entity Signals (10pt) — Knowledge graph, sameAs, About/Contact, geographic identity\n\n"
-        "Score bands: 86-100 Excellent | 68-85 Good | 36-67 Foundation | 0-35 Critical\n\n"
-        "## Tools\n\n"
-        "- [GEO Audit Web](https://geoready.dev/): Audit any URL — score 0-100 with breakdown\n"
-        "- [Compare](https://geoready.dev/compare): Side-by-side GEO score comparison of two URLs\n"
-        "- [Badge](https://geoready.dev/badge?url=https://example.com): Dynamic SVG GEO score badge\n"
-        "- [Manifesto](https://geoready.dev/manifesto): Why AI search visibility should be open\n"
-        "- [Research](https://geoready.dev/research): Scientific papers behind the scoring\n"
-        "- [Roadmap](https://geoready.dev/roadmap): Upcoming features and milestones\n\n"
-        "## CLI Install\n\n"
-        "```\n"
-        "pip install geo-optimizer-skill\n"
-        "geo audit --url https://example.com\n"
-        "geo audit --url https://example.com --format rich\n"
-        "geo audit --url https://example.com --format json\n"
-        "geo fix --url https://example.com --only robots,llms,schema\n"
-        "```\n\n"
-        "## Integrations\n\n"
-        "- CLI: `geo` command — 7 output formats (text, rich, json, html, pdf, github, ci)\n"
-        "- GitHub Actions: `geo-action` — CI/CD integration with SARIF and JUnit output\n"
-        "- MCP Server: `geo-mcp` — Tool server for Claude, Cursor, Windsurf, Continue\n"
-        "- Python API: `from geo_optimizer import run_full_audit` — programmatic access\n"
-        "- Plugin system: Custom checks via `CheckRegistry` — extend without forking\n\n"
-        "## Documentation\n\n"
-        "- [Getting Started]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/getting-started/): "
-        "Install and first audit\n"
-        "- [GEO Audit]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/geo-audit/): "
-        "Full CLI reference\n"
-        "- [Scoring Rubric]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/scoring-rubric/): "
-        "All 8 categories explained\n"
-        "- [MCP Server]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/mcp-server/): "
-        "AI agent integration\n"
-        "- [CI/CD]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/ci-cd/): "
-        "GitHub Actions integration\n"
-        "- [GEO Methods]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/geo-methods/): "
-        "47 research-backed methods\n\n"
-        "## Reference\n\n"
-        "- [AI Bots Reference]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/"
-        "ai-bots-reference/): 27 AI crawlers documented\n"
-        "- [Troubleshooting]"
-        "(https://auriti-labs.github.io/geo-optimizer-skill/troubleshooting/): "
-        "Common issues\n"
-        "- [Changelog]"
-        "(https://github.com/Auriti-Labs/geo-optimizer-skill/blob/main/CHANGELOG.md): "
-        "Full release history\n"
-        "- [PyPI](https://pypi.org/project/geo-optimizer-skill/): "
-        "Package and version history\n\n"
-        "## Research Foundation\n\n"
-        "- GEO: Generative Engine Optimization — Princeton NLP, KDD 2024 — https://arxiv.org/abs/2311.09735\n"
-        "- AutoGEO: Automatic GEO — Carnegie Mellon, ICLR 2026 — https://arxiv.org/abs/2510.11438\n"
-        "- llms.txt specification — Answer.AI — https://llmstxt.org/\n"
-        "- geo-checklist.dev standard — https://geo-checklist.dev/\n\n"
-        "## Optional\n\n"
-        "- [GitHub Issues]"
-        "(https://github.com/Auriti-Labs/geo-optimizer-skill/issues): "
-        "Bug reports and feature requests\n"
-        "- [Releases RSS]"
-        "(https://github.com/Auriti-Labs/geo-optimizer-skill/releases.atom): "
-        "Subscribe to new releases\n"
-    )
-    return PlainTextResponse(content=llms, media_type="text/plain")
-
+# @app.get("/llms.txt")
+# async def llms_txt():
+#     """Serve llms.txt per AI content discovery."""
+#     from fastapi.responses import PlainTextResponse
+#
+#     llms = (
+#         "# GEO Optimizer\n\n"
+#         "> Open-source toolkit to audit, fix, and optimize any website for AI search engine visibility.\n"
+#         "> Scores 0-100 across 8 categories and 47 research-backed methods.\n"
+#         "> Based on Princeton KDD 2024 and AutoGEO ICLR 2026 peer-reviewed research.\n"
+#         "> MIT License. Free for commercial and personal use.\n\n"
+#         "## What GEO Optimizer Does\n\n"
+#         "GEO Optimizer audits any publicly accessible URL — regardless of CMS, framework, or hosting — "
+#         "and measures how visible that site is to AI search engines like ChatGPT, Perplexity, Claude, and Gemini.\n\n"
+#         "The audit covers 8 categories:\n"
+#         "1. robots.txt (18pt) — AI bot access configuration for OAI-SearchBot, ClaudeBot, PerplexityBot\n"
+#         "2. llms.txt (18pt) — Machine-readable site index for AI agents, depth-graduated scoring\n"
+#         "3. Schema JSON-LD (16pt) — Structured data: FAQPage, Article, Organization, WebSite, sameAs\n"
+#         "4. Meta Tags (14pt) — Title, description, canonical, Open Graph\n"
+#         "5. Content Quality (12pt) — Statistics, citations, headings, word count, front-loading\n"
+#         "6. Technical Signals (6pt) — Language, RSS feed, freshness indicators\n"
+#         "7. AI Discovery (6pt) — well-known/ai.txt, /ai/summary.json, /ai/faq.json, /ai/service.json\n"
+#         "8. Brand & Entity Signals (10pt) — Knowledge graph, sameAs, About/Contact, geographic identity\n\n"
+#         "Score bands: 86-100 Excellent | 68-85 Good | 36-67 Foundation | 0-35 Critical\n\n"
+#         "## Tools\n\n"
+#         "- [GEO Audit Web](https://geoready.dev/): Audit any URL — score 0-100 with breakdown\n"
+#         "- [Compare](https://geoready.dev/compare): Side-by-side GEO score comparison of two URLs\n"
+#         "- [Badge](https://geoready.dev/badge?url=https://example.com): Dynamic SVG GEO score badge\n"
+#         "- [Manifesto](https://geoready.dev/manifesto): Why AI search visibility should be open\n"
+#         "- [Research](https://geoready.dev/research): Scientific papers behind the scoring\n"
+#         "- [Roadmap](https://geoready.dev/roadmap): Upcoming features and milestones\n\n"
+#         "## CLI Install\n\n"
+#         "```\n"
+#         "pip install geo-optimizer-skill\n"
+#         "geo audit --url https://example.com\n"
+#         "geo audit --url https://example.com --format rich\n"
+#         "geo audit --url https://example.com --format json\n"
+#         "geo fix --url https://example.com --only robots,llms,schema\n"
+#         "```\n\n"
+#         "## Integrations\n\n"
+#         "- CLI: `geo` command — 7 output formats (text, rich, json, html, pdf, github, ci)\n"
+#         "- GitHub Actions: `geo-action` — CI/CD integration with SARIF and JUnit output\n"
+#         "- MCP Server: `geo-mcp` — Tool server for Claude, Cursor, Windsurf, Continue\n"
+#         "- Python API: `from geo_optimizer import run_full_audit` — programmatic access\n"
+#         "- Plugin system: Custom checks via `CheckRegistry` — extend without forking\n\n"
+#         "## Documentation\n\n"
+#         "- [Getting Started]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/getting-started/): "
+#         "Install and first audit\n"
+#         "- [GEO Audit]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/geo-audit/): "
+#         "Full CLI reference\n"
+#         "- [Scoring Rubric]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/scoring-rubric/): "
+#         "All 8 categories explained\n"
+#         "- [MCP Server]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/mcp-server/): "
+#         "AI agent integration\n"
+#         "- [CI/CD]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/ci-cd/): "
+#         "GitHub Actions integration\n"
+#         "- [GEO Methods]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/geo-methods/): "
+#         "47 research-backed methods\n\n"
+#         "## Reference\n\n"
+#         "- [AI Bots Reference]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/"
+#         "ai-bots-reference/): 27 AI crawlers documented\n"
+#         "- [Troubleshooting]"
+#         "(https://auriti-labs.github.io/geo-optimizer-skill/troubleshooting/): "
+#         "Common issues\n"
+#         "- [Changelog]"
+#         "(https://github.com/Auriti-Labs/geo-optimizer-skill/blob/main/CHANGELOG.md): "
+#         "Full release history\n"
+#         "- [PyPI](https://pypi.org/project/geo-optimizer-skill/): "
+#         "Package and version history\n\n"
+#         "## Research Foundation\n\n"
+#         "- GEO: Generative Engine Optimization — Princeton NLP, KDD 2024 — https://arxiv.org/abs/2311.09735\n"
+#         "- AutoGEO: Automatic GEO — Carnegie Mellon, ICLR 2026 — https://arxiv.org/abs/2510.11438\n"
+#         "- llms.txt specification — Answer.AI — https://llmstxt.org/\n"
+#         "- geo-checklist.dev standard — https://geo-checklist.dev/\n\n"
+#         "## Optional\n\n"
+#         "- [GitHub Issues]"
+#         "(https://github.com/Auriti-Labs/geo-optimizer-skill/issues): "
+#         "Bug reports and feature requests\n"
+#         "- [Releases RSS]"
+#         "(https://github.com/Auriti-Labs/geo-optimizer-skill/releases.atom): "
+#         "Subscribe to new releases\n"
+#     )
+#     return PlainTextResponse(content=llms, media_type="text/plain")
 
 @app.get("/.well-known/ai.txt")
 async def well_known_ai():
@@ -1945,3 +1958,5 @@ async def gap_analysis(request: Request, body: GapAnalysisRequest):
     }
 
     return JSONResponse(content=response_data)
+# Serve il frontend Astro buildato
+app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")

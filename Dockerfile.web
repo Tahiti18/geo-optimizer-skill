@@ -1,10 +1,21 @@
 # ─── GEO Optimizer Web — Docker image per Railway ──────────────────────────
-# Avvia il server FastAPI per servire l'API di audit
+# Avvia il server FastAPI per servire l'API di audit + frontend Astro statico
 #
 # Build:  docker build -f Dockerfile.web -t geo-optimizer-web .
 # Run:    docker run -p 8000:8000 geo-optimizer-web
 
-# ─── Stage 1: build ─────────────────────────────────────────────────────────
+# ─── Stage 0: Astro frontend build ────────────────────────────────────────────
+FROM node:22-slim AS astro-build
+
+WORKDIR /frontend
+
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
+# ─── Stage 1: Python build ────────────────────────────────────────────────────
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
@@ -15,11 +26,11 @@ COPY src/ src/
 # Installa con le dipendenze web + pdf (FastAPI + uvicorn + weasyprint)
 RUN pip install --no-cache-dir --prefix=/install ".[web,pdf]"
 
-# ─── Stage 2: runtime ───────────────────────────────────────────────────────
+# ─── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM python:3.12-slim
 
-LABEL org.opencontainers.image.title="GEO Optimizer Web API" \
-      org.opencontainers.image.description="FastAPI audit service for GEO Score" \
+LABEL org.opencontainers.image.title="GEO Optimizer Web" \
+      org.opencontainers.image.description="FastAPI audit service + Astro frontend" \
       org.opencontainers.image.source="https://github.com/auriti-labs/geo-optimizer-skill"
 
 COPY --from=builder /install /usr/local
@@ -34,14 +45,18 @@ RUN useradd --create-home --shell /bin/bash geo
 USER geo
 WORKDIR /home/geo
 
+# Copia frontend buildato
+COPY --from=astro-build --chown=geo:geo /frontend/dist /home/geo/static
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-ENV PORT=8000
+ENV PORT=8000 \
+    GEO_STATIC_DIR=/home/geo/static
 EXPOSE 8000
 
 # Avvia il server FastAPI — usa $PORT da variabile d'ambiente
 # per compatibilità con Render, Railway e altri PaaS che iniettano la porta
 # Shell form necessaria per espansione variabile $PORT
 CMD ["sh", "-c", "uvicorn geo_optimizer.web.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
-# Rebuild trigger: v3.17.14
+# Rebuild trigger: v3.17.15
