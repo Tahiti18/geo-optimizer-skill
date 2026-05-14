@@ -2,7 +2,7 @@
 
 <img src="assets/logo.svg" alt="GEO Optimizer" width="480"/>
 
-### Make websites visible to AI search engines
+### Open-source GEO audit engine for AI search visibility and citability.
 
 [![PyPI](https://img.shields.io/pypi/v/geo-optimizer-skill?style=flat-square&color=3b82f6)](https://pypi.org/project/geo-optimizer-skill/)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-3776ab?style=flat-square&logo=python&logoColor=white)](https://python.org)
@@ -12,9 +12,9 @@
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-8b5cf6?style=flat-square)](https://modelcontextprotocol.io)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/auritidesign)
 
-**Audit, fix, and optimize any website to be cited by ChatGPT, Perplexity, Claude, and Gemini.**
+**GEO Optimizer helps you audit whether a website can be crawled, understood, cited, and monitored by AI answer engines.**
 
-[Quick Start](#quick-start) · [Live Demo](https://geoready.dev) · [Documentation](https://auriti-labs.github.io/geo-optimizer-skill/) · [Changelog](CHANGELOG.md)
+[Quick Start](#quick-start) · [Live Demo](https://geoready.dev) · [Pricing](https://geoready.dev/pricing) · [Early Access](https://geoready.dev/early-access) · [Documentation](https://auriti-labs.github.io/geo-optimizer-skill/) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -32,6 +32,41 @@ Perplexity: "According to [Competitor.com], the formula is..."
 ```
 
 GEO Optimizer audits your site against **47 research-backed methods** ([Princeton KDD 2024](https://arxiv.org/abs/2311.09735), [AutoGEO ICLR 2026](https://arxiv.org/abs/2510.11438)) and generates the fixes.
+
+---
+
+## GEO is not traditional SEO
+
+SEO and GEO answer different questions:
+
+- **SEO** optimizes for ranking and visibility in traditional search result pages — crawlability, backlinks, keyword signals.
+- **GEO** measures whether an AI answer engine can read, parse, understand, and cite your content when generating a response.
+- A site can rank well on Google and still be largely opaque to AI systems — missing structured data, no llms.txt, bot access blocked, thin factual density.
+
+GEO Optimizer focuses on the technical and structural signals that AI answer engines use: robots.txt bot permissions, llms.txt presence and depth, JSON-LD schema richness, brand entity coherence, and content citability across 47 methods. These complement traditional SEO work rather than replacing it.
+
+---
+
+## Try it online
+
+| | |
+|---|---|
+| **Free audit** | [geoready.dev](https://geoready.dev) — single-URL GEO score, no account required |
+| **Pricing** | [geoready.dev/pricing](https://geoready.dev/pricing) — plans and feature comparison |
+| **Early access** | [geoready.dev/early-access](https://geoready.dev/early-access) — join the list for Pro monitoring (planned) |
+
+---
+
+## Open-source vs GeoReady Platform
+
+| | GEO Optimizer CLI | GeoReady.dev Free | GeoReady Pro *(early access, planned)* |
+|---|---|---|---|
+| **License / access** | MIT, open-source | Free, no account | Early access waitlist — not yet publicly available |
+| **Core use** | Local audit engine, CI/CD integration, JSON output | Web audit, score preview, educational pages | Monitoring, score history, regression alerts, agency reporting |
+| **Target** | Developers, automation | Developers, SEO specialists | Ongoing clients, multi-site portfolios |
+| **Pricing** | Free forever | Free forever | Planned — see [geoready.dev/pricing](https://geoready.dev/pricing) |
+
+The CLI and web audit remain MIT-licensed and free. The GeoReady platform adds server-side continuity — monitoring, history, and team features — that a local CLI cannot provide on its own.
 
 ---
 
@@ -143,6 +178,8 @@ geo snapshots --quality --snapshot-id 12              # Citation quality tiers f
 geo history --url https://example.com                  # Saved score trend
 geo track --url https://example.com --report           # Monitoring HTML report
 ```
+
+The JSON output format is intended to remain stable across minor versions and acts as the machine-readable integration contract for the GeoReady platform.
 
 ---
 
@@ -272,6 +309,8 @@ See [`examples/example_plugin.py`](examples/example_plugin.py) for a working exa
 
 We focus on **technical infrastructure** (robots.txt, llms.txt, schema, meta) over content rewriting. The research confirms: if crawlers can't find and parse your content, prose optimization doesn't matter.
 
+GEO Optimizer translates these findings into technical and content-level signals that can be operationally audited and tracked over time.
+
 ---
 
 ## Roadmap
@@ -313,6 +352,10 @@ pytest tests/ -v   # 1309 tests, all mocked
 ---
 
 <div align="center">
+
+Run the [CLI locally](#quick-start), try the [free audit online](https://geoready.dev), check [planned pricing](https://geoready.dev/pricing), or join the [early access list](https://geoready.dev/early-access) for monitoring.
+
+---
 
 **MIT License** · Built by [Auriti Labs](https://github.com/auriti-labs)
 
