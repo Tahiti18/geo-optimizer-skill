@@ -24,14 +24,14 @@ interface AuditReportContainerProps {
 type State =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; report: AuditReport };
+  | { status: 'ready'; report: AuditReport; claim_token: string | null; expires_at: string | null };
 
 export default function AuditReportContainer({ reportId }: AuditReportContainerProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
 
   useEffect(() => {
     if (reportId === 'demo') {
-      setState({ status: 'ready', report: mockAuditReport });
+      setState({ status: 'ready', report: mockAuditReport, claim_token: null, expires_at: null });
       return;
     }
 
@@ -63,7 +63,7 @@ export default function AuditReportContainer({ reportId }: AuditReportContainerP
       if (result.error) {
         setState({ status: 'error', message: result.error });
       } else if (result.report) {
-        setState({ status: 'ready', report: result.report });
+        setState({ status: 'ready', report: result.report, claim_token: result.claim_token, expires_at: result.expires_at });
         trackAuditCompleted({
           score: result.report.geoScore,
           score_band: result.report.grade ?? 'unknown',
@@ -232,6 +232,30 @@ export default function AuditReportContainer({ reportId }: AuditReportContainerP
           </section>
         </div>
       </div>
+
+      {state.claim_token && (
+        <div className="mt-6 rounded-xl border border-accent-teal/30 bg-accent-teal/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-text-primary mb-0.5">Save this report to your dashboard</p>
+            <p className="text-xs text-text-secondary">Create a free account to track this domain over time. Report link expires in 24h.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            <a
+              href={`https://app.geoready.dev/signup?claim=${state.claim_token}`}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-accent-teal text-white text-sm font-semibold hover:bg-accent-teal-dark transition-colors"
+            >
+              Save report
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </a>
+            <a
+              href={`https://app.geoready.dev/login?claim=${state.claim_token}`}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-border text-text-primary text-sm font-semibold hover:bg-bg-subtle transition-colors"
+            >
+              Log in to save
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

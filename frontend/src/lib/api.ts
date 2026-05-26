@@ -32,16 +32,23 @@ export function buildApiUrl(
 export interface FetchAuditResult {
   report: AuditReport | null;
   error: string | null;
+  claim_token: string | null;
+  expires_at: string | null;
 }
 
 /**
- * Esegue un audit GEO chiamando il backend FastAPI.
+ * Esegue un audit GEO chiamando il backend FastAPI via POST.
  * Il backend restituisce un oggetto JSON completo che viene
- * mappato nel formato AuditReport atteso dai componenti UI.
+ * mappato nel formato AuditReport atteso dai componenti UI,
+ * più claim_token e expires_at per il flusso di claim anonimo.
  */
 export async function fetchAuditReport(url: string): Promise<FetchAuditResult> {
   try {
-    const res = await fetch(buildApiUrl('/audit', { url }));
+    const res = await fetch(buildApiUrl('/public/audits'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
 
     if (!res.ok) {
       let detail = `HTTP ${res.status}`;
@@ -51,16 +58,18 @@ export async function fetchAuditReport(url: string): Promise<FetchAuditResult> {
       } catch {
         // ignore JSON parse error on error response
       }
-      return { report: null, error: detail };
+      return { report: null, error: detail, claim_token: null, expires_at: null };
     }
 
     const data = await res.json();
     const report = mapBackendToFrontend(data);
-    return { report, error: null };
+    return { report, error: null, claim_token: data.claim_token ?? null, expires_at: data.expires_at ?? null };
   } catch (e: any) {
     return {
       report: null,
       error: e.message || 'Network error. Is the backend running?',
+      claim_token: null,
+      expires_at: null,
     };
   }
 }

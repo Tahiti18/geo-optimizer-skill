@@ -5,24 +5,44 @@ import SurveyForm from '../components/SurveyForm';
 ---
 
 <Shell
-  title="Early Access — GeoReady Pro"
-  description="Join the GeoReady Pro early access list. Full GEO reports, AI search monitoring, score history, and alerts for developers, SEO specialists, and agencies."
+  title="Founding Access — GeoReady"
+  description="GeoReady founding access is now open. Run a free audit, create an account, or start with Pro for full 8-category reports, monitoring, and alerts."
   canonical="https://geoready.dev/early-access"
 >
   <main class="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-16">
-    <header class="mb-12">
+    <header class="mb-10">
       <div class="flex items-center gap-2 text-[10px] font-mono text-text-muted uppercase tracking-wider">
         <span>GEO Optimizer</span>
         <span class="w-1 h-1 rounded-full bg-text-muted"></span>
-        <span>Early Access</span>
+        <span>Founding Access</span>
       </div>
       <h1 class="mt-3 font-display text-3xl md:text-4xl font-bold text-text-primary leading-tight tracking-tight">
-        GeoReady Pro — Early Access
+        Founding access is open
       </h1>
       <p class="mt-4 text-base text-text-secondary leading-relaxed max-w-xl">
-        The free audit gives you a GEO score and three categories. GeoReady Pro adds everything else:
-        full 8-category reports, score history, weekly monitoring, regression alerts, and tools for agencies.
+        Run a free audit now, or create an account to track your domain over time. Pro plan starts at €19/month.
       </p>
+
+      <div class="flex flex-col sm:flex-row gap-3 mt-6">
+        <a
+          href="https://geoready.dev"
+          class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-accent-teal text-white text-sm font-semibold hover:bg-accent-teal-dark transition-colors"
+        >
+          Run a free audit
+        </a>
+        <a
+          href="https://app.geoready.dev/signup"
+          class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg border border-border text-text-primary text-sm font-semibold hover:bg-bg-subtle transition-colors"
+        >
+          Create free account
+        </a>
+        <a
+          href="https://app.geoready.dev/pricing"
+          class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-accent-teal text-sm font-semibold hover:underline transition-colors"
+        >
+          See pricing →
+        </a>
+      </div>
     </header>
 
     <div class="grid md:grid-cols-2 gap-10 md:gap-16">
@@ -39,7 +59,11 @@ import SurveyForm from '../components/SurveyForm';
             <span class="mt-0.5 w-4 h-4 shrink-0 text-accent-teal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </span>
-            <span><strong class="text-text-primary">Weekly AI search monitoring</strong> — track score changes over time per domain</span>
+            <span>
+              <strong class="text-text-primary">Weekly AI search monitoring</strong>
+              <span class="ml-2 text-[10px] font-mono uppercase tracking-wider text-accent-teal bg-accent-teal/10 px-1.5 py-0.5 rounded">Founding access</span>
+              — track score changes over time per domain
+            </span>
           </li>
           <li class="flex items-start gap-3">
             <span class="mt-0.5 w-4 h-4 shrink-0 text-accent-teal">
@@ -63,7 +87,11 @@ import SurveyForm from '../components/SurveyForm';
             <span class="mt-0.5 w-4 h-4 shrink-0 text-accent-teal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </span>
-            <span><strong class="text-text-primary">API access</strong> — integrate GEO audits in your own tools and workflows</span>
+            <span>
+              <strong class="text-text-primary">API access</strong>
+              <span class="ml-2 text-[10px] font-mono uppercase tracking-wider text-text-muted bg-bg-subtle px-1.5 py-0.5 rounded border border-border">Beta</span>
+              — integrate GEO audits in your own tools and workflows
+            </span>
           </li>
         </ul>
 
@@ -76,11 +104,13 @@ import SurveyForm from '../components/SurveyForm';
       </div>
 
       <div>
-        <h2 class="text-sm font-semibold text-text-primary uppercase tracking-wider font-mono mb-5">Join the list</h2>
+        <h2 class="text-sm font-semibold text-text-primary uppercase tracking-wider font-mono mb-5">Get product updates</h2>
         <WaitlistForm client:load />
-        <p class="mt-4 text-xs text-text-muted leading-relaxed">
-          Early access is for people building with GEO data. We'll notify you by email
-          when access opens. We won't share your data or add you to unrelated lists.
+        <p class="mt-3 text-xs text-text-muted leading-relaxed">
+          Get notified about new features and GEO research. No spam.
+        </p>
+        <p class="mt-3 text-xs text-text-muted leading-relaxed">
+          Payments are processed by Stripe, Inc. Your account session is stored in browser local storage. We don't use tracking cookies.
         </p>
       </div>
     </div>
@@ -101,8 +131,8 @@ import SurveyForm from '../components/SurveyForm';
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": "Early Access — GeoReady Pro",
-    "description": "Join the GeoReady Pro early access list. Full GEO reports, AI search monitoring, score history, and alerts.",
+    "name": "Founding Access — GeoReady",
+    "description": "GeoReady founding access is now open. Full GEO reports, AI search monitoring, score history, and alerts.",
     "url": "https://geoready.dev/early-access",
     "isPartOf": {
       "@type": "WebSite",
