@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from geo_optimizer.core.agent_access import _compute_overall_status, run_agent_access_audit
 from geo_optimizer.models.results import AgentAccessResult
-
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 

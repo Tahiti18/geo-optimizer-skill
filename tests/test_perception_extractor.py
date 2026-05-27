@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 from geo_optimizer.core.perception_extractor import extract_perception
 from geo_optimizer.models.results import AuditResult
 
-
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 

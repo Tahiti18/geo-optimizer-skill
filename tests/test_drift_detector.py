@@ -5,7 +5,6 @@ from __future__ import annotations
 from geo_optimizer.core.drift_detector import _classify_severity, compute_semantic_drift
 from geo_optimizer.models.results import HistoryEntry, SemanticDriftDelta
 
-
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
