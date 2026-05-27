@@ -82,5 +82,6 @@ Allow: /
 User-agent: *
 Allow: /
 Disallow: /report/
+Disallow: /api/
 
 Sitemap: https://geoready.dev/sitemap.xml
