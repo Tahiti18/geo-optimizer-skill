@@ -53,13 +53,13 @@ export default function AuditForm() {
             if (errorMsg) setErrorMsg('');
           }}
           disabled={isLoading}
-          className="flex-1 px-4 py-3 rounded-lg border border-border bg-bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-shadow disabled:opacity-60"
+          className="flex-1 px-4 py-3 rounded-2xl border border-border bg-bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-shadow disabled:opacity-60"
           aria-describedby={errorMsg ? 'audit-error' : undefined}
         />
         <button
           type="submit"
           disabled={isLoading}
-          className="px-6 py-3 rounded-lg bg-accent-teal text-white font-medium text-sm hover:bg-accent-teal-dark transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-6 py-3 rounded-2xl bg-accent-teal text-white font-medium text-sm hover:bg-accent-teal-dark transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isLoading ? (
             <>
@@ -79,7 +79,7 @@ export default function AuditForm() {
         <div
           id="audit-error"
           role="alert"
-          className="p-4 rounded-lg border border-accent-danger/20 bg-accent-danger/5 text-accent-danger text-sm"
+          className="p-4 rounded-2xl border border-accent-danger/20 bg-accent-danger/5 text-accent-danger text-sm"
         >
           {errorMsg}
         </div>
