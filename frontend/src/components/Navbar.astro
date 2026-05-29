@@ -31,7 +31,7 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
         <path d="M8 24 C12 14 18 34 24 24 C30 14 36 34 40 24" stroke="white" stroke-width="2.1" stroke-linecap="round" stroke-opacity="0.72"/>
       </svg>
       <span class="font-display font-bold text-base tracking-tight">
-        <span class="text-accent-teal">Geo</span><span class="text-text-primary">Ready</span>
+        <span class="logo-geo">Geo</span><span class="logo-ready">Ready</span>
       </span>
       <span class="version-badge hidden sm:inline font-mono text-[10px] px-1.5 py-0.5 rounded">{version}</span>
     </a>
@@ -522,4 +522,10 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
   #floating-nav[data-theme="dark"] .more-item:hover { background: rgba(255, 255, 255, 0.08); }
 
   /* More chevron color follows theme via currentColor on the parent button — already handled */
+
+  /* ─── Logo wordmark ──────────────────────────────────────────────────────── */
+  #floating-nav[data-theme="light"] .logo-geo { color: #0D9488; }
+  #floating-nav[data-theme="light"] .logo-ready { color: rgba(20, 20, 20, 0.95); }
+  #floating-nav[data-theme="dark"] .logo-geo { color: #5EEAD4; }
+  #floating-nav[data-theme="dark"] .logo-ready { color: white; }
 </style>
