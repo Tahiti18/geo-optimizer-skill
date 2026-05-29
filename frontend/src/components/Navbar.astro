@@ -19,9 +19,9 @@ const moreLinks = [
 const featuredLink = { label: "Pricing", href: "/pricing/" };
 ---
 
-<nav id="floating-nav" class="sticky top-0 z-50 pt-3 pb-2 transition-all duration-300">
+<nav id="floating-nav" data-theme="light" class="sticky top-0 z-50 pt-3 pb-2 transition-all duration-300">
   <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div id="nav-pill" class="h-14 pl-4 pr-2 sm:pl-5 sm:pr-3 flex items-center justify-between gap-3 rounded-full border border-border/60 bg-bg-base/40 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_4px_20px_-6px_rgba(0,0,0,0.10)] transition-all duration-300">
+    <div id="nav-pill" class="nav-pill h-14 pl-4 pr-2 sm:pl-5 sm:pr-3 flex items-center justify-between gap-3 rounded-full backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300">
 
     <!-- Logo -->
     <a href="/" class="flex items-center gap-2.5 shrink-0">
@@ -362,17 +362,57 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
       floatNav.classList.remove('pt-3');
       floatNav.classList.add('pt-2');
       navPill.classList.remove('h-14');
-      navPill.classList.add('h-12', 'shadow-[0_10px_32px_-8px_rgba(0,0,0,0.22)]');
+      navPill.classList.add('h-12');
+      navPill.dataset.scrolled = 'true';
     } else {
       floatNav.classList.add('pt-3');
       floatNav.classList.remove('pt-2');
       navPill.classList.add('h-14');
-      navPill.classList.remove('h-12', 'shadow-[0_10px_32px_-8px_rgba(0,0,0,0.22)]');
+      navPill.classList.remove('h-12');
+      navPill.dataset.scrolled = 'false';
     }
   }
 
   updateNavScroll();
   window.addEventListener('scroll', updateNavScroll, { passive: true });
+
+  // ─── Auto contrast via IntersectionObserver ─────────────────────────────────
+  // Sections with class .nav-dark or [data-nav-theme="dark"] flip nav to dark theme
+  // when they cross under the navbar. Detection point: top of viewport + nav height.
+  const darkSections = document.querySelectorAll<HTMLElement>(
+    '.nav-dark, [data-nav-theme="dark"], .bg-bg-dark, [class*="bg-bg-dark"]'
+  );
+
+  if (darkSections.length && floatNav) {
+    const NAV_OFFSET = 80; // approx nav height + padding
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find any dark section currently intersecting the nav line
+        let inDark = false;
+        document.querySelectorAll<HTMLElement>(
+          '.nav-dark, [data-nav-theme="dark"], .bg-bg-dark, [class*="bg-bg-dark"]'
+        ).forEach((sec) => {
+          const rect = sec.getBoundingClientRect();
+          if (rect.top <= NAV_OFFSET && rect.bottom >= NAV_OFFSET) {
+            inDark = true;
+          }
+        });
+        floatNav.dataset.theme = inDark ? 'dark' : 'light';
+      },
+      { rootMargin: `-${NAV_OFFSET}px 0px 0px 0px`, threshold: [0, 1] }
+    );
+    darkSections.forEach((s) => observer.observe(s));
+
+    // Also check on scroll (covers sections taller than viewport)
+    window.addEventListener('scroll', () => {
+      let inDark = false;
+      darkSections.forEach((sec) => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= NAV_OFFSET && rect.bottom >= NAV_OFFSET) inDark = true;
+      });
+      floatNav.dataset.theme = inDark ? 'dark' : 'light';
+    }, { passive: true });
+  }
 
   // ─── Active link highlight (current page pill) ───────────────────────────────
   const navLinks = document.querySelectorAll<HTMLAnchorElement>('[data-nav-link]');
@@ -385,3 +425,50 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
     }
   });
 </script>
+
+<style>
+  /* Glassmorphism pill — true translucency, no opaque fill */
+  .nav-pill {
+    background: color-mix(in srgb, white 18%, transparent);
+    border: 1px solid color-mix(in srgb, white 35%, transparent);
+    box-shadow:
+      0 1px 0 0 color-mix(in srgb, white 50%, transparent) inset,
+      0 4px 24px -8px rgba(0, 0, 0, 0.12),
+      0 2px 6px -2px rgba(0, 0, 0, 0.06);
+  }
+  .nav-pill[data-scrolled="true"] {
+    background: color-mix(in srgb, white 28%, transparent);
+    box-shadow:
+      0 1px 0 0 color-mix(in srgb, white 60%, transparent) inset,
+      0 10px 32px -10px rgba(0, 0, 0, 0.22),
+      0 4px 12px -4px rgba(0, 0, 0, 0.10);
+  }
+
+  /* Dark theme — nav over dark sections (auto-flipped by JS) */
+  #floating-nav[data-theme="dark"] .nav-pill {
+    background: color-mix(in srgb, black 28%, transparent);
+    border-color: color-mix(in srgb, white 18%, transparent);
+    box-shadow:
+      0 1px 0 0 color-mix(in srgb, white 12%, transparent) inset,
+      0 6px 28px -10px rgba(0, 0, 0, 0.45);
+  }
+  #floating-nav[data-theme="dark"] .nav-pill[data-scrolled="true"] {
+    background: color-mix(in srgb, black 42%, transparent);
+  }
+
+  /* Text colors flip with theme (overrides Tailwind utilities on the inner links) */
+  #floating-nav[data-theme="dark"] .nav-pill,
+  #floating-nav[data-theme="dark"] .nav-pill * {
+    color: rgba(255, 255, 255, 0.92);
+  }
+  #floating-nav[data-theme="dark"] .nav-pill .text-accent-teal,
+  #floating-nav[data-theme="dark"] .nav-pill [class*="text-accent-teal"] {
+    color: #5EEAD4; /* lighter teal for dark bg */
+  }
+  #floating-nav[data-theme="dark"] .nav-pill a[href*="signup"] {
+    color: white;
+  }
+  #floating-nav[data-theme="dark"] .nav-pill a:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+</style>
