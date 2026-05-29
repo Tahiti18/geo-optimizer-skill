@@ -33,7 +33,7 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
       <span class="font-display font-bold text-base tracking-tight">
         <span class="text-accent-teal">Geo</span><span class="text-text-primary">Ready</span>
       </span>
-      <span class="hidden sm:inline font-mono text-[10px] px-1.5 py-0.5 rounded bg-bg-subtle text-text-secondary border border-border">{version}</span>
+      <span class="version-badge hidden sm:inline font-mono text-[10px] px-1.5 py-0.5 rounded">{version}</span>
     </a>
 
     <!-- Desktop nav -->
@@ -427,6 +427,19 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
 </script>
 
 <style>
+  /* Version badge — readable on glass, both themes */
+  .version-badge {
+    background: color-mix(in srgb, white 35%, transparent);
+    border: 1px solid color-mix(in srgb, white 45%, transparent);
+    color: rgba(20, 20, 20, 0.78);
+    backdrop-filter: blur(4px);
+  }
+  #floating-nav[data-theme="dark"] .version-badge {
+    background: color-mix(in srgb, white 14%, transparent);
+    border-color: color-mix(in srgb, white 22%, transparent);
+    color: rgba(255, 255, 255, 0.85);
+  }
+
   /* Glassmorphism pill — true translucency, no opaque fill */
   .nav-pill {
     background: color-mix(in srgb, white 18%, transparent);
