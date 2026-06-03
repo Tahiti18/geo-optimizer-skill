@@ -151,6 +151,10 @@ def _call_audit_result_to_dict(result):
     import importlib
     import os
 
+    # Dipendenza opzionale: il web app richiede FastAPI (extra [web]).
+    # In CI si installa solo [dev], quindi skip se FastAPI non c'è.
+    pytest.importorskip("fastapi", reason="FastAPI non installato (pip install geo-optimizer-skill[web])")
+
     os.environ.setdefault("GEO_STATIC_DIR", str(Path(__file__).parent.parent / "frontend/dist"))
     app_module = importlib.import_module("geo_optimizer.web.app")
     return app_module._audit_result_to_dict(result)

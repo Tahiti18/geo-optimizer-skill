@@ -5,10 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · [SemVer](https://semv
 
 ---
 
+## [4.12.2] — 2026-06-03
+
+### Fixed
+- **`test_audit_contract.py` failed in CI without the `web` extra** — the 10 `test_web_api_*` contract tests (added in 4.12.0) import `geo_optimizer.web.app`, which requires FastAPI (`[web]` extra). CI installs only `[dev]`, so they raised `ModuleNotFoundError: No module named 'fastapi'` and kept the PyPI publish blocked. Added a `pytest.importorskip("fastapi", ...)` guard in the shared `_call_audit_result_to_dict` helper, matching the pattern already used in `test_web_app.py`.
+
 ## [4.12.1] — 2026-06-03
 
 ### Fixed
 - **Time-bomb tests in `test_citability.py`** — content-freshness and content-decay tests used hardcoded `dateModified` values asserted against freshness thresholds that are relative to *today*. As time passed the dates aged into different freshness bands, failing the suite and blocking the v4.12.0 PyPI publish (Docker shipped, PyPI stayed on 4.11.1). Tests now build dates relative to `datetime.now()`, keeping them stable over time. No runtime/library code changed.
+
+> Note: 4.12.1 was tagged but its PyPI publish was still blocked by the FastAPI import issue above; Docker `v4.12.1` shipped. 4.12.2 is the first publish to reach PyPI after the v4.12.0 regression.
 
 ---
 
