@@ -7,6 +7,8 @@ detection e scoring. Zero chiamate HTTP.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from bs4 import BeautifulSoup
 
 from geo_optimizer.core.citability import (
@@ -473,12 +475,14 @@ class TestImageAltQuality:
 
 class TestContentFreshness:
     def test_json_ld_recente(self):
-        html = """
+        recent = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        published = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
+        html = f"""
         <html><body>
             <script type="application/ld+json">
-            {"@type": "Article", "dateModified": "2026-03-01", "datePublished": "2025-12-01"}
+            {{"@type": "Article", "dateModified": "{recent}", "datePublished": "{published}"}}
             </script>
-            <p>In 2026, AI search engines dominate.</p>
+            <p>AI search engines dominate.</p>
         </body></html>
         """
         result = detect_content_freshness(_soup(html))
@@ -504,55 +508,39 @@ class TestContentFreshness:
 
     # ── Test freshness_level graduated (#401) ────────────────────────────────
 
-    def test_freshness_level_very_fresh_1_mese(self):
-        """Date 1 month ago → freshness_level = very_fresh, 4 citability points."""
-        html = """
+    @staticmethod
+    def _article_html_days_ago(days: int) -> str:
+        """Build Article JSON-LD with dateModified `days` ago (relative to today)."""
+        date_str = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        return f"""
         <html><body>
             <script type="application/ld+json">
-            {"@type": "Article", "dateModified": "2026-03-01"}
+            {{"@type": "Article", "dateModified": "{date_str}"}}
             </script>
         </body></html>
         """
-        result = detect_content_freshness(_soup(html))
+
+    def test_freshness_level_very_fresh_1_mese(self):
+        """Date ~1 month ago → freshness_level = very_fresh, 4 citability points."""
+        result = detect_content_freshness(_soup(self._article_html_days_ago(30)))
         assert result.details["freshness_level"] == "very_fresh"
         assert result.details["is_fresh"] is True
 
     def test_freshness_level_fresh_4_mesi(self):
-        """Date 4 months ago → freshness_level = fresh, 3 citability points."""
-        html = """
-        <html><body>
-            <script type="application/ld+json">
-            {"@type": "Article", "dateModified": "2025-12-01"}
-            </script>
-        </body></html>
-        """
-        result = detect_content_freshness(_soup(html))
+        """Date ~4 months ago → freshness_level = fresh, 3 citability points."""
+        result = detect_content_freshness(_soup(self._article_html_days_ago(135)))
         assert result.details["freshness_level"] == "fresh"
         assert result.details["is_fresh"] is True
 
     def test_freshness_level_aging_8_mesi(self):
-        """Date 8 months ago → freshness_level = aging, 2 citability points."""
-        html = """
-        <html><body>
-            <script type="application/ld+json">
-            {"@type": "Article", "dateModified": "2025-08-01"}
-            </script>
-        </body></html>
-        """
-        result = detect_content_freshness(_soup(html))
+        """Date ~8 months ago → freshness_level = aging, 2 citability points."""
+        result = detect_content_freshness(_soup(self._article_html_days_ago(270)))
         assert result.details["freshness_level"] == "aging"
         assert result.details["is_fresh"] is False
 
     def test_freshness_level_stale_14_mesi(self):
-        """Date 14 months ago → freshness_level = stale, 0 citability points."""
-        html = """
-        <html><body>
-            <script type="application/ld+json">
-            {"@type": "Article", "dateModified": "2025-02-01"}
-            </script>
-        </body></html>
-        """
-        result = detect_content_freshness(_soup(html))
+        """Date ~14 months ago → freshness_level = stale, 0 citability points."""
+        result = detect_content_freshness(_soup(self._article_html_days_ago(420)))
         assert result.details["freshness_level"] == "stale"
         assert result.details["is_fresh"] is False
 
@@ -855,12 +843,13 @@ class TestEeat:
 
 class TestContentDecay:
     def test_contenuto_aggiornato(self):
-        html = """
+        recent = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
+        html = f"""
         <html><body>
             <script type="application/ld+json">
-            {"@type": "Article", "dateModified": "2026-02-01"}
+            {{"@type": "Article", "dateModified": "{recent}"}}
             </script>
-            <p>In 2026, AI search is evolving rapidly.</p>
+            <p>AI search is evolving rapidly.</p>
         </body></html>
         """
         result = detect_content_decay(_soup(html))

@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · [SemVer](https://semv
 
 ---
 
+## [4.12.1] — 2026-06-03
+
+### Fixed
+- **Time-bomb tests in `test_citability.py`** — content-freshness and content-decay tests used hardcoded `dateModified` values asserted against freshness thresholds that are relative to *today*. As time passed the dates aged into different freshness bands, failing the suite and blocking the v4.12.0 PyPI publish (Docker shipped, PyPI stayed on 4.11.1). Tests now build dates relative to `datetime.now()`, keeping them stable over time. No runtime/library code changed.
+
+---
+
 ## [4.12.0] — 2026-05-29
 
 ### Changed
