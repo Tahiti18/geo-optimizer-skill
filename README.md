@@ -219,7 +219,7 @@ The JSON output format is intended to remain stable across minor versions and ac
 
 ```yaml
 # .github/workflows/geo.yml
-- uses: Auriti-Labs/geo-optimizer-skill@v4.12.2
+- uses: Auriti-Labs/geo-optimizer-skill@v4.13.0
   with:
     url: https://yoursite.com
     min-score: 70        # Fail if score drops below 70
@@ -362,9 +362,10 @@ This project follows a deliberate release cadence — focused waves, not noisy p
 | v4.10.0 | Apr 2026 | Veil | Shipped |
 | v4.11.0 | May 2026 | Static | Shipped |
 | v4.12.0 | May 2026 | Ledger | Shipped |
-| v4.13.0 | Nov 2026 | Quiet Glass | Planned |
-| v4.14.0-rc1 | Jan 2027 | Threshold | Planned |
-| v4.14.0-rc2 / v4.15.0 | Mar 2027 | Pale Signal | Planned |
+| v4.13.0 | Jun 2026 | Echo | Shipped |
+| v4.14.0 | Nov 2026 | Quiet Glass | Planned |
+| v4.15.0-rc1 | Jan 2027 | Threshold | Planned |
+| v4.15.0-rc2 / v4.16.0 | Mar 2027 | Pale Signal | Planned |
 | v5.0.0 | May 2027 | Black Archive | Exploring |
 
 Next focus areas: signal architecture, retrieval surface analysis, scoring recalibration, and structural pattern recognition. The v5.0 cycle represents a broader architectural evolution.

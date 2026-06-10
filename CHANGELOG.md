@@ -5,7 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · [SemVer](https://semv
 
 ---
 
-## [Unreleased]
+## [4.13.0] — 2026-06-10 · Echo
 
 ### Added
 - **`geo citations` — one-shot AI citation check (bring your own API key).** Asks real AI answer engines the questions your customers ask and reports whether the brand is mentioned and the domain is cited as a source: per-query sources, competitor domains cited instead of you, mention/citation rates, and a verdict (`strong` / `cited` / `mentioned_only` / `invisible`). Text and JSON output.
