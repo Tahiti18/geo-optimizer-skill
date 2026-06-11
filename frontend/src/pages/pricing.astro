@@ -1,6 +1,6 @@
 ---
 import Shell from '../components/Shell.astro';
-import MarketingVisual from '../components/MarketingVisual.astro';
+import VisualStage from '../components/VisualStage.astro';
 import { marketingVisuals } from '../lib/marketingVisuals';
 
 const selfServePlans = [
@@ -53,13 +53,14 @@ const selfServePlans = [
     period: '/month',
     status: 'Founding price',
     statusStyle: 'bg-accent-teal/10 text-accent-teal',
-    description: 'Multi-site daily monitoring, unbranded PDF exports, and competitor comparison. For consultants and agencies managing a portfolio.',
+    description: 'AI citation tracking, multi-site daily monitoring, unbranded PDF exports, and competitor comparison. For consultants and agencies managing a portfolio.',
     cta: 'Start with Studio',
     ctaHref: 'https://app.geoready.dev/signup?plan=studio',
     ctaStyle: 'border border-border text-text-primary hover:bg-bg-subtle',
     recommended: false,
     features: [
       'Everything in Pro',
+      'AI citation tracking — 5 automated checks/day (Perplexity)',
       '15 domains — daily monitoring',
       '12-month score history',
       'Unbranded PDF export (removes GeoReady footer and badge)',
@@ -129,7 +130,7 @@ const comparisonRows: [string, string, string, string, string][] = [
   ['Competitor comparison',  '—',       '—',        '✓',        '✓'],
   ['Bulk audit',             '—',       '—',        '50 URLs',  '∞'],
   ['Team workspace',         '—',       '—',        '—',        '✓'],
-  ['AI search snapshots',    '—',       '—',        '—',        '✓'],
+  ['AI search snapshots',    '—',       '—',        '5 runs/day', '✓'],
   ['API access',             '—',       '✓',        '✓',        '✓'],
   ['CLI (MIT)',               '✓',       '✓',        '✓',        '✓'],
 ];
@@ -178,36 +179,75 @@ const faqs = [
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-16">
 
     {/* Hero */}
-    <header class="mb-14 grid gap-8 lg:grid-cols-[minmax(0,0.88fr)_minmax(320px,0.72fr)] lg:items-center">
-      <div class="max-w-3xl">
-        <div class="flex items-center gap-2 text-[10px] font-mono text-text-muted uppercase tracking-wider">
-          <span>GeoReady</span>
-          <span class="w-1 h-1 rounded-full bg-text-muted"></span>
-          <span>Pricing</span>
-        </div>
-        <h1 class="mt-3 font-display text-3xl md:text-4xl font-bold text-text-primary leading-tight tracking-tight">
-          Measure what AI search engines can read.<br class="hidden sm:block" /> Monitor it over time.
-        </h1>
-        <p class="mt-4 text-base text-text-secondary leading-relaxed max-w-2xl">
-          The free audit requires no account and returns a GEO score with actionable recommendations.
-          Pro adds continuity: weekly monitoring, score history, regression alerts, and exports for client deliverables.
-        </p>
-        <p class="mt-3 text-sm text-text-muted leading-relaxed">
-          The web audit and CLI are MIT-licensed and will always remain free.
-          No trial periods. No credit card required for the Free plan.
-        </p>
-      </div>
+    <header class="mb-16 overflow-hidden border border-border bg-bg-surface">
+      <div class="grid lg:grid-cols-[minmax(0,0.82fr)_minmax(420px,0.78fr)]">
+        <div class="p-7 sm:p-10 lg:p-12">
+          <div class="flex items-center gap-2 text-[10px] font-mono text-text-muted uppercase tracking-wider">
+            <span>GeoReady</span>
+            <span class="w-1 h-1 rounded-full bg-text-muted"></span>
+            <span>Pricing</span>
+          </div>
+          <h1 class="mt-4 max-w-3xl font-display text-4xl font-bold text-text-primary leading-tight tracking-tight md:text-5xl">
+            Start with a free audit. Pay when monitoring becomes part of the workflow.
+          </h1>
+          <p class="mt-5 max-w-2xl text-base text-text-secondary leading-relaxed">
+            The free audit requires no account and returns a GEO score with actionable recommendations.
+            Paid plans add continuity: monitoring, score history, alerts, exports, and team workflows.
+          </p>
 
-      <figure class="overflow-hidden rounded-[--radius-xl] border border-border bg-bg-surface shadow-[0_24px_70px_-42px_rgba(15,23,42,0.6)]">
-        <MarketingVisual
-          {...marketingVisuals.clientReport}
-          sizes="(min-width: 1024px) 38vw, 100vw"
-          loading="eager"
-          priority
-          imgClass="aspect-[4/3] object-cover"
-          captionClass="border-t border-border px-4 py-3 text-xs leading-relaxed text-text-muted"
-        />
-      </figure>
+          <div class="mt-8 grid gap-3 sm:grid-cols-3">
+            <div class="border-l border-accent-teal/30 pl-4">
+              <p class="font-mono text-[11px] uppercase tracking-[0.16em] text-accent-teal">Free</p>
+              <p class="mt-1 text-sm text-text-secondary">Single-URL audit, no account.</p>
+            </div>
+            <div class="border-l border-accent-teal/30 pl-4">
+              <p class="font-mono text-[11px] uppercase tracking-[0.16em] text-accent-teal">Pro</p>
+              <p class="mt-1 text-sm text-text-secondary">$19/month founding price.</p>
+            </div>
+            <div class="border-l border-accent-teal/30 pl-4">
+              <p class="font-mono text-[11px] uppercase tracking-[0.16em] text-accent-teal">Studio</p>
+              <p class="mt-1 text-sm text-text-secondary">Multi-site monitoring and exports.</p>
+            </div>
+          </div>
+
+          <p class="mt-8 max-w-2xl text-sm text-text-muted leading-relaxed">
+            The web audit and CLI are MIT-licensed and will always remain free. No trial periods.
+            No credit card required for the Free plan.
+          </p>
+        </div>
+
+        <div class="border-t border-border bg-bg-subtle p-4 lg:border-l lg:border-t-0">
+          <VisualStage
+            visual={marketingVisuals.clientReport}
+            variant="paper"
+            label="Commercial output"
+            eyebrow="Report export"
+            sizes="(min-width: 1024px) 38vw, 100vw"
+            loading="eager"
+            priority
+            imgClass="aspect-[4/3] object-cover"
+            metrics={[
+              { label: 'Pro', value: '1 domain' },
+              { label: 'Studio', value: '15 domains' },
+              { label: 'Agency', value: '50 domains' },
+            ]}
+            chips={['Unbranded PDF', 'Score history', 'Alerts']}
+          />
+        </div>
+      </div>
+      <div class="grid border-t border-border bg-bg-base md:grid-cols-4">
+        {[
+          ['Free', 'Audit once, learn what to fix.'],
+          ['Pro', 'Track one domain weekly.'],
+          ['Studio', 'Run a portfolio daily.'],
+          ['Agency', 'Add team and bulk workflows.'],
+        ].map(([label, text]) => (
+          <div class="border-b border-border p-5 md:border-b-0 md:border-r md:last:border-r-0">
+            <p class="font-mono text-xs uppercase tracking-[0.16em] text-accent-teal">{label}</p>
+            <p class="mt-2 text-sm leading-relaxed text-text-secondary">{text}</p>
+          </div>
+        ))}
+      </div>
     </header>
 
     {/* Plan cards */}
