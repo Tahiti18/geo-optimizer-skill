@@ -27,14 +27,14 @@
 
   --color-text-primary: #0F172A;
   --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
+  --color-text-muted: #5B6573;
   --color-text-inverse: #F1F5F9;
 
-  --color-accent-teal: #0D9488;
-  --color-accent-teal-dark: #0F766E;
-  --color-accent-electric: #6366F1;
-  --color-accent-violet: #8B5CF6;
-  --color-accent-success: #059669;
+  --color-accent-teal: #0F766E;
+  --color-accent-teal-dark: #115E59;
+  --color-accent-electric: #4F46E5;
+  --color-accent-violet: #6D28D9;
+  --color-accent-success: #065F46;
   --color-accent-warning: #D97706;
   --color-accent-danger: #DC2626;
 
@@ -63,6 +63,16 @@ body {
   flex-direction: column;
 }
 
+.bg-bg-dark,
+[data-hero-bleed].bg-bg-dark {
+  --color-text-muted: #94A3B8;
+}
+
+.bg-bg-dark .text-accent-teal,
+[data-hero-bleed].bg-bg-dark .text-accent-teal {
+  color: #5EEAD4;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -85,6 +95,11 @@ html {
 :focus-visible {
   outline: 2px solid var(--color-accent-teal);
   outline-offset: 2px;
+}
+
+.site-main :where(p, li) a[class*="text-accent-teal"] {
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
 }
 
 ::selection {

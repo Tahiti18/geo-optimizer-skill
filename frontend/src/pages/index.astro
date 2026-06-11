@@ -2,6 +2,8 @@
 import Shell from '../components/Shell.astro';
 import AuditForm from '../components/AuditForm';
 import StatsBar from '../components/StatsBar';
+import MarketingVisual from '../components/MarketingVisual.astro';
+import { marketingVisuals } from '../lib/marketingVisuals';
 
 const trustCards = [
   {
@@ -103,34 +105,48 @@ const faqSchema = {
   {/* Hero */}
   <section id="audit-form" data-hero-bleed class="bg-bg-dark text-text-inverse">
     <div class="max-w-7xl mx-auto px-6 py-20 md:py-28">
-      <div class="max-w-3xl">
-        <h1 class="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
-          Is your website visible to AI search engines?
-        </h1>
-        <p class="mt-6 text-lg md:text-xl text-text-muted leading-relaxed max-w-2xl">
-          AI SEO is about being visible in AI search. GeoReady audits whether a website can be crawled,
-          understood, and cited by AI answer engines like ChatGPT, Perplexity, Claude, and Gemini.
-          Get a 0–100 GEO score across 8 signal categories — free, no account required.
-        </p>
+      <div class="grid items-center gap-10 lg:grid-cols-[minmax(0,0.86fr)_minmax(420px,1fr)]">
+        <div class="max-w-3xl">
+          <h1 class="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
+            Is your website visible to AI search engines?
+          </h1>
+          <p class="mt-6 text-lg md:text-xl text-text-muted leading-relaxed max-w-2xl">
+            AI SEO is about being visible in AI search. GeoReady audits whether a website can be crawled,
+            understood, and cited by AI answer engines like ChatGPT, Perplexity, Claude, and Gemini.
+            Get a 0–100 GEO score across 8 signal categories — free, no account required.
+          </p>
 
-        <div class="mt-10">
-          <AuditForm client:load />
+          <div class="mt-10">
+            <AuditForm client:load />
+          </div>
+
+          <StatsBar client:load />
+
+          <div class="mt-6 flex flex-wrap items-center gap-4 text-sm">
+            <a href="/pricing/" data-cta="home_hero_view_pricing" class="text-text-muted hover:text-text-inverse transition-colors">View pricing</a>
+            <span class="text-text-muted/40">·</span>
+            <a href="/pricing/" data-cta="home_hero_see_plans" class="text-text-muted hover:text-text-inverse transition-colors">GeoReady Pro — see plans</a>
+          </div>
         </div>
 
-        <StatsBar client:load />
-
-        <div class="mt-6 flex flex-wrap items-center gap-4 text-sm">
-          <a href="/pricing/" data-cta="home_hero_view_pricing" class="text-text-muted hover:text-text-inverse transition-colors">View pricing</a>
-          <span class="text-text-muted/40">·</span>
-          <a href="/pricing/" data-cta="home_hero_see_plans" class="text-text-muted hover:text-text-inverse transition-colors">GeoReady Pro — see plans</a>
-        </div>
+        <figure class="overflow-hidden rounded-[--radius-xl] border border-white/10 bg-bg-dark-surface shadow-[0_30px_90px_-35px_rgba(13,148,136,0.7)]">
+          <MarketingVisual
+            {...marketingVisuals.commandCenter}
+            sizes="(min-width: 1024px) 48vw, 100vw"
+            loading="eager"
+            priority
+            imgClass="aspect-[16/9] object-cover"
+            captionClass="border-t border-white/10 px-4 py-3 text-xs leading-relaxed text-text-muted"
+          />
+        </figure>
       </div>
     </div>
   </section>
 
   {/* What is AI search visibility */}
   <section class="max-w-7xl mx-auto px-6 py-16">
-    <div class="max-w-3xl">
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.75fr)] lg:items-center">
+      <div class="max-w-3xl">
       <h2 class="text-2xl md:text-3xl font-bold text-text-primary">AI SEO, GEO, and GeoReady</h2>
       <p class="mt-4 text-text-secondary leading-relaxed">
         <strong class="text-text-primary">AI SEO</strong> is optimizing for visibility in AI search.
@@ -158,6 +174,16 @@ const faqSchema = {
         <span class="text-text-muted">·</span>
         <a href="/report/demo/" class="text-accent-teal hover:text-accent-teal-dark transition-colors">View a demo report</a>
       </div>
+      </div>
+
+      <figure class="overflow-hidden rounded-[--radius-xl] border border-border bg-bg-surface shadow-[0_24px_70px_-40px_rgba(15,23,42,0.65)]">
+        <MarketingVisual
+          {...marketingVisuals.discoveryStack}
+          sizes="(min-width: 1024px) 38vw, 100vw"
+          imgClass="aspect-[16/9] object-cover"
+          captionClass="border-t border-border px-4 py-3 text-xs leading-relaxed text-text-muted"
+        />
+      </figure>
     </div>
   </section>
 
@@ -247,6 +273,14 @@ const faqSchema = {
     <p class="text-sm text-text-secondary mb-8 max-w-2xl">
       The free audit is a point-in-time diagnosis. Monitoring is what turns it into an ongoing signal.
     </p>
+    <figure class="mb-8 overflow-hidden rounded-[--radius-xl] border border-border bg-bg-surface shadow-[0_24px_70px_-42px_rgba(15,23,42,0.6)]">
+      <MarketingVisual
+        {...marketingVisuals.monitoring}
+        sizes="(min-width: 1024px) 1180px, 100vw"
+        imgClass="max-h-[520px] object-cover object-top"
+        captionClass="border-t border-border px-4 py-3 text-xs leading-relaxed text-text-muted"
+      />
+    </figure>
     <div class="grid md:grid-cols-2 gap-6">
       <div class="p-6 rounded-[--radius-lg] border border-border bg-bg-surface">
         <span class="text-xs font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-success/10 text-accent-success inline-block mb-4">
@@ -337,6 +371,7 @@ const faqSchema = {
   {/* Final CTA */}
   <section class="max-w-7xl mx-auto px-6 pb-20">
     <div class="p-8 md:p-12 rounded-[--radius-xl] border border-border bg-bg-surface">
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.7fr)] lg:items-center">
       <div class="max-w-3xl">
         <h2 class="text-2xl md:text-3xl font-bold text-text-primary">
           AI search is already deciding which sites get cited.
@@ -366,6 +401,15 @@ const faqSchema = {
           <span class="mx-1">·</span>
           <a href="/pricing/" class="hover:text-text-secondary transition-colors underline">view pricing</a>
         </p>
+      </div>
+      <figure class="overflow-hidden rounded-[--radius-lg] border border-border bg-bg-subtle">
+        <MarketingVisual
+          {...marketingVisuals.clientReport}
+          sizes="(min-width: 1024px) 35vw, 100vw"
+          imgClass="aspect-[4/3] object-cover"
+          captionClass="border-t border-border px-4 py-3 text-xs leading-relaxed text-text-muted"
+        />
+      </figure>
       </div>
     </div>
   </section>

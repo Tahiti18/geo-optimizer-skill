@@ -65,8 +65,92 @@ const META_BY_PATH = {
   '/manifesto/': { changefreq: 'monthly', priority: '0.7' },
   '/privacy/': { changefreq: 'monthly', priority: '0.5' },
   '/cookie-policy/': { changefreq: 'monthly', priority: '0.5' },
+  '/tools/ai-citation-checker/': { changefreq: 'monthly', priority: '0.8' },
 };
 const DEFAULT_META = { changefreq: 'monthly', priority: '0.6' };
+
+// Immagini principali indicizzabili. Le stesse pagine mantengono alt text e caption
+// in HTML; questa mappa espone i visual anche nella sitemap.
+const IMAGE_BY_PATH = {
+  '/': [
+    {
+      loc: '/assets/geoready-visuals/ai-visibility-command-center.png',
+      title: 'GeoReady AI visibility audit dashboard',
+      caption: 'GEO score, crawler access, citation graph, recommendations, and score trend in one report.',
+    },
+    {
+      loc: '/assets/geoready-visuals/ai-discovery-stack.png',
+      title: 'AI visibility signal stack',
+      caption: 'Crawler access, llms.txt, schema, content structure, entity clarity, and citation output.',
+    },
+    {
+      loc: '/assets/geoready-visuals/monitoring-alerts-dashboard.png',
+      title: 'GeoReady monitoring and alerts dashboard',
+      caption: 'Score history, portfolio checks, regression alerts, and AI answer snapshots.',
+    },
+    {
+      loc: '/assets/geoready-visuals/client-report-export.png',
+      title: 'GeoReady report export package',
+      caption: 'Score breakdown, recommendations, and PDF export for audit deliverables.',
+    },
+  ],
+  '/pricing/': [
+    {
+      loc: '/assets/geoready-visuals/client-report-export.png',
+      title: 'GeoReady report export package',
+      caption: 'Client-ready reporting for paid GeoReady plans.',
+    },
+  ],
+  '/ai-seo/': [
+    {
+      loc: '/assets/geoready-visuals/ai-discovery-stack.png',
+      title: 'AI SEO discovery stack',
+      caption: 'How crawler access, llms.txt, schema, entity clarity, and citation output fit into AI SEO.',
+    },
+  ],
+  '/guides/': [
+    {
+      loc: '/assets/geoready-visuals/ai-discovery-stack.png',
+      title: 'AI visibility guide visual',
+      caption: 'Technical signal layers behind AI visibility and GEO guides.',
+    },
+  ],
+  '/research/': [
+    {
+      loc: '/assets/geoready-visuals/ai-discovery-stack.png',
+      title: 'Research-backed AI visibility signals',
+      caption: 'Visual model of the signals that inform GEO Optimizer scoring.',
+    },
+  ],
+  '/compare/': [
+    {
+      loc: '/assets/geoready-visuals/ai-visibility-command-center.png',
+      title: 'AI visibility comparison dashboard',
+      caption: 'Audit dashboard used to compare GEO score, crawler access, citations, and recommendations.',
+    },
+  ],
+  '/analyze-competitors/': [
+    {
+      loc: '/assets/geoready-visuals/ai-visibility-command-center.png',
+      title: 'Competitor AI visibility analysis dashboard',
+      caption: 'Dashboard for comparing AI visibility signals across competitor domains.',
+    },
+  ],
+  '/tools/llms-txt-generator/': [
+    {
+      loc: '/assets/geoready-visuals/ai-discovery-stack.png',
+      title: 'llms.txt in the AI discovery stack',
+      caption: 'Where llms.txt fits alongside crawler access, schema, and citation output.',
+    },
+  ],
+  '/tools/ai-citation-checker/': [
+    {
+      loc: '/assets/geoready-visuals/ai-citation-checker.png',
+      title: 'AI citation checker interface',
+      caption: 'Domain input, AI answer snapshots, citation chips, and citation rate metric.',
+    },
+  ],
+};
 
 // Avvisi (fallback non-git) accumulati durante la generazione, stampati alla fine.
 const warnings = [];
@@ -120,6 +204,16 @@ function fileToUrl(routePath) {
   url = '/' + url;
   if (!url.endsWith('/')) url += '/';
   return url;
+}
+
+/** Escape minimo per contenuti XML testuali e attributi. */
+function xmlEscape(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 /** Walk ricorsivo della cartella pages, ritorna i path file relativi. */
@@ -217,17 +311,28 @@ function renderXml(entries) {
   const urls = entries
     .map((e) => {
       const meta = META_BY_PATH[e.url] || DEFAULT_META;
+      const images = IMAGE_BY_PATH[e.url] || [];
+      const imageXml = images
+        .map((img) => [
+          '    <image:image>',
+          `      <image:loc>${xmlEscape(SITE + img.loc)}</image:loc>`,
+          `      <image:title>${xmlEscape(img.title)}</image:title>`,
+          `      <image:caption>${xmlEscape(img.caption)}</image:caption>`,
+          '    </image:image>',
+        ].join('\n'))
+        .join('\n');
       return [
         '  <url>',
         `    <loc>${SITE}${e.url}</loc>`,
         `    <lastmod>${e.lastmod}</lastmod>`,
         `    <changefreq>${meta.changefreq}</changefreq>`,
         `    <priority>${meta.priority}</priority>`,
+        imageXml,
         '  </url>',
-      ].join('\n');
+      ].filter(Boolean).join('\n');
     })
     .join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>\n`;
 }
 
 // --- main ---

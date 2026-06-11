@@ -1,5 +1,7 @@
 ---
 import Shell from '../components/Shell.astro';
+import MarketingVisual from '../components/MarketingVisual.astro';
+import { marketingVisuals } from '../lib/marketingVisuals';
 
 const title = 'AI SEO Guide — Optimize for ChatGPT, Perplexity & Gemini';
 const description =
@@ -68,6 +70,17 @@ const faqs = [
         Published June 2026 · 11 min read
       </p>
     </header>
+
+    <figure class="mb-12 md:mb-16 overflow-hidden rounded-[--radius-xl] border border-border bg-bg-surface shadow-[0_24px_70px_-42px_rgba(15,23,42,0.6)]">
+      <MarketingVisual
+        {...marketingVisuals.discoveryStack}
+        sizes="(min-width: 768px) 768px, 100vw"
+        loading="eager"
+        priority
+        imgClass="aspect-[16/9] object-cover"
+        captionClass="border-t border-border px-4 py-3 text-xs leading-relaxed text-text-muted"
+      />
+    </figure>
 
     <div class="space-y-12 md:space-y-16 [&_h2]:font-display [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-text-primary [&_h2]:leading-tight [&_h2]:tracking-tight [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-text-primary [&_p]:text-text-secondary [&_p]:leading-relaxed [&_li]:text-text-secondary [&_li]:leading-relaxed">
 
