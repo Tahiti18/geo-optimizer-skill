@@ -1,5 +1,6 @@
 ---
 import Shell from '../components/Shell.astro';
+import NewsletterSignup from '../components/NewsletterSignup';
 
 const title = 'State of GEO — AI Search Readiness of Audited Sites';
 const description =
@@ -93,6 +94,15 @@ const canonical = 'https://geoready.dev/state-of-geo/';
         <p class="mt-4 text-sm">
           The dataset grows with every audit. Run one and you're (anonymously) in it.
         </p>
+      </section>
+
+      <section>
+        <NewsletterSignup
+          client:visible
+          source="newsletter-state-of-geo"
+          title="The full State of GEO 2026 report is coming"
+          detail="This page shows the public teaser. The full category breakdown ships as a report when the cohort passes 200 sites — get it by email."
+        />
       </section>
 
       <section>
