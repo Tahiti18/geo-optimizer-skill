@@ -281,8 +281,9 @@ export const roadmapPhases: RoadmapPhase[] = [
 export const releaseCadence = [
   { version: 'v4.10.0', name: 'Veil', status: 'available' as RoadmapStatus },
   { version: 'v4.11.0', name: 'Static', status: 'available' as RoadmapStatus },
-  { version: 'v4.12.0', name: 'Ledger', status: 'planned' as RoadmapStatus },
-  { version: 'v4.13.0', name: 'Quiet Glass', status: 'planned' as RoadmapStatus },
-  { version: 'v4.14.0', name: 'Threshold / Pale Signal', status: 'planned' as RoadmapStatus },
+  { version: 'v4.12.0', name: 'Ledger', status: 'available' as RoadmapStatus },
+  { version: 'v4.13.0', name: 'Echo', status: 'available' as RoadmapStatus },
+  { version: 'v4.14.0', name: 'Quiet Glass', status: 'available' as RoadmapStatus },
+  { version: 'v4.15.0', name: 'Threshold / Pale Signal', status: 'planned' as RoadmapStatus },
   { version: 'v5.0.0', name: 'Black Archive', status: 'exploring' as RoadmapStatus },
 ];

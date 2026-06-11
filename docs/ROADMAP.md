@@ -22,12 +22,12 @@ Some of these themes will span multiple releases. Specific scope may shift as re
 | v4.11.0 | May 2026 (advanced from Jul 2026) | **Static** | Expanded retrieval surface analysis | Shipped — MVP A |
 | v4.12.0 | May 2026 (advanced from Sep 2026) | **Ledger** | Scoring model recalibration | Shipped |
 | v4.13.0 | Jun 2026 | **Echo** | AI citation visibility (`geo citations`) | Shipped |
-| v4.14.0 | Nov 2026 | **Quiet Glass** | Structural pattern recognition | Planned |
+| v4.14.0 | Jun 2026 (advanced from Nov 2026) | **Quiet Glass** | Structural pattern recognition (`geo authority`, `geo drift`, multimodal readiness) | Shipped |
 | v4.15.0-rc1 | Jan 2027 | **Threshold** | Pre-release validation cycle | Planned |
 | v4.15.0-rc2 / v4.16.0 | Mar 2027 | **Pale Signal** | Stabilization and edge resolution | Planned |
 | v5.0.0 | May 2027 | **Black Archive** | Next-generation audit framework | Planned |
 
-Release windows are estimates. Dates may shift based on validation outcomes and testing discipline. v4.11.0 and v4.12.0 both advanced ahead of their original windows because their scope was validated and stabilised earlier than planned. v4.13.0 (**Echo**) was inserted ahead of schedule to ship the one-shot AI citation check; the Quiet Glass scope moves unchanged to v4.14.0 and later codenames shift one version accordingly.
+Release windows are estimates. Dates may shift based on validation outcomes and testing discipline. v4.11.0 and v4.12.0 both advanced ahead of their original windows because their scope was validated and stabilised earlier than planned. v4.13.0 (**Echo**) was inserted ahead of schedule to ship the one-shot AI citation check, and v4.14.0 (**Quiet Glass**) advanced from Nov 2026 once its structural-analysis scope (topic authority, drift, multimodal scaffolding) stabilised early. Later codenames keep their positions.
 
 ## Static Cycle — MVP Track
 
