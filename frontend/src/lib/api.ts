@@ -134,3 +134,66 @@ export async function generateLlmsTxt(
     };
   }
 }
+
+export interface CitationsCheckInput {
+  brand: string;
+  domain: string;
+  topic?: string;
+}
+
+// Risultato del citation check: envelope { data, error } come gli altri client.
+export interface CitationsCheckResult {
+  data: {
+    brand: string;
+    domain: string;
+    verdict: 'strong' | 'cited' | 'mentioned_only' | 'invisible';
+    queries_run: number;
+    brand_mention_rate: number;
+    domain_citation_rate: number;
+    top_cited_domains: [string, number][];
+    entries: {
+      query: string;
+      brand_mentioned: boolean;
+      domain_cited: boolean;
+      cited_sources: string[];
+      snippet: string;
+    }[];
+  } | null;
+  error: string | null;
+}
+
+/**
+ * Esegue il check AI citations: il backend interroga Perplexity Sonar con
+ * domande da cliente e verifica se il brand è menzionato e il dominio citato.
+ * Stesso pattern di generateLlmsTxt: errori sempre gestiti, mai throw.
+ */
+export async function checkCitations(
+  input: CitationsCheckInput,
+): Promise<CitationsCheckResult> {
+  try {
+    const res = await fetch(buildApiUrl('/citations'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        detail = err.detail || detail;
+      } catch {
+        // ignora errore di parsing JSON sulla risposta di errore
+      }
+      return { data: null, error: detail };
+    }
+
+    const data = await res.json();
+    return { data, error: null };
+  } catch (e: any) {
+    return {
+      data: null,
+      error: e.message || 'Network error. Is the backend running?',
+    };
+  }
+}

@@ -11,6 +11,8 @@ const primaryLinks = [
 // Nascoste nel dropdown "More"
 const moreLinks = [
   { label: "Guides", href: "/guides/", desc: "Practical AI visibility guides" },
+  { label: "AI Citation Checker", href: "/tools/ai-citation-checker/", desc: "Is your brand cited by AI? Free check" },
+  { label: "llms.txt Generator", href: "/tools/llms-txt-generator/", desc: "Free AI-ready llms.txt from your sitemap" },
   { label: "Research", href: "/research/", desc: "Princeton KDD + AutoGEO ICLR" },
   { label: "Roadmap", href: "/roadmap/", desc: "What's coming next" },
   { label: "Manifesto", href: "/manifesto/", desc: "Why we built GeoReady" },
@@ -481,8 +483,8 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
   #floating-nav[data-theme="dark"] .nav-link-active { background: rgba(255, 255, 255, 0.10); color: white; }
 
   /* Featured (Pricing) — accent teal both themes */
-  #floating-nav[data-theme="light"] .nav-link-featured { color: #0D9488; }
-  #floating-nav[data-theme="light"] .nav-link-featured:hover { background: rgba(13, 148, 136, 0.10); }
+  #floating-nav[data-theme="light"] .nav-link-featured { color: #115E59; }
+  #floating-nav[data-theme="light"] .nav-link-featured:hover { background: rgba(17, 94, 89, 0.12); }
   #floating-nav[data-theme="dark"] .nav-link-featured { color: #5EEAD4; }
   #floating-nav[data-theme="dark"] .nav-link-featured:hover { background: rgba(94, 234, 212, 0.12); }
 
@@ -525,7 +527,7 @@ const featuredLink = { label: "Pricing", href: "/pricing/" };
   /* More chevron color follows theme via currentColor on the parent button — already handled */
 
   /* ─── Logo wordmark ──────────────────────────────────────────────────────── */
-  #floating-nav[data-theme="light"] .logo-geo { color: #0D9488; }
+  #floating-nav[data-theme="light"] .logo-geo { color: #115E59; }
   #floating-nav[data-theme="light"] .logo-ready { color: rgba(20, 20, 20, 0.95); }
   #floating-nav[data-theme="dark"] .logo-geo { color: #5EEAD4; }
   #floating-nav[data-theme="dark"] .logo-ready { color: white; }
