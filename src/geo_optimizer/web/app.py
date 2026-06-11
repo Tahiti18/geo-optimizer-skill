@@ -944,6 +944,132 @@ async def llms_generate(request: Request, body: LlmsGenerateRequest):
     }
 
 
+# ─── AI Citation Check (free tool, cost-guarded) ─────────────────────────────
+# Each check makes outbound Perplexity Sonar calls paid by the deployment
+# owner, so on top of the per-IP rate limit there is a hard global daily cap
+# and the endpoint stays disabled unless a key is explicitly configured.
+
+_CITATIONS_MAX_QUERIES = 2  # Sonar calls per check
+_CITATIONS_TIMEOUT = 90  # seconds for the whole check
+_CITATIONS_DAILY_CAP = int(os.environ.get("GEO_CITATIONS_DAILY_CAP", "50"))
+_CITATIONS_QUERY_TEMPLATES = [
+    "What is the best tool for {topic}?",
+    "What do you recommend for {topic}?",
+]
+
+_citations_day = ""  # UTC date of the counter below
+_citations_count = 0
+
+
+async def _reserve_citations_slot() -> bool:
+    """Reserve one slot in the global daily cap (UTC day, in-memory)."""
+    global _citations_day, _citations_count
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    async with _get_lock("citations_cap"):
+        if _citations_day != today:
+            _citations_day = today
+            _citations_count = 0
+        if _citations_count >= _CITATIONS_DAILY_CAP:
+            return False
+        _citations_count += 1
+        return True
+
+
+class CitationsCheckRequest(BaseModel):
+    """Schema for the POST /api/citations request body."""
+
+    brand: str
+    domain: str
+    topic: Optional[str] = None  # noqa: UP045 (Python 3.9 runtime annotations)
+
+
+@app.post("/api/citations")
+async def citations_check(request: Request, body: CitationsCheckRequest):
+    """One-shot AI citation check: is the brand mentioned / the domain cited?
+
+    Queries Perplexity Sonar (real web citations) with customer-style
+    questions. No URL is fetched, so there is no SSRF surface; the cost
+    surface is guarded by the per-IP rate limit, a global daily cap, and
+    a hard limit of two Sonar calls per check.
+    """
+    perplexity_key = os.environ.get("PERPLEXITY_API_KEY", "")
+    if not perplexity_key:
+        raise HTTPException(status_code=503, detail="AI citation check is not enabled on this deployment.")
+
+    if not _verify_bearer_token(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid authentication token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not await _check_rate_limit(_get_client_ip(request)):
+        raise HTTPException(status_code=429, detail="Too many requests. Try again soon.")
+
+    brand = body.brand.strip()
+    if not 2 <= len(brand) <= 80:
+        raise HTTPException(status_code=400, detail="Brand must be 2-80 characters.")
+
+    from geo_optimizer.core.citations import normalize_domain, run_citation_check
+
+    domain = normalize_domain(body.domain)
+    if "." not in domain or len(domain) > 253:
+        raise HTTPException(status_code=400, detail="Provide a valid domain, e.g. example.com.")
+
+    topic = (body.topic or "").strip()[:120] or brand
+
+    if not await _reserve_citations_slot():
+        raise HTTPException(
+            status_code=429,
+            detail="Daily check budget exhausted. Try again tomorrow or track citations at app.geoready.dev.",
+        )
+
+    queries = [t.format(topic=topic) for t in _CITATIONS_QUERY_TEMPLATES[:_CITATIONS_MAX_QUERIES]]
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                run_citation_check,
+                brand,
+                domain,
+                topic=topic,
+                queries=queries,
+                provider="perplexity",
+                api_key=perplexity_key,
+            ),
+            timeout=_CITATIONS_TIMEOUT,
+        )
+    except asyncio.TimeoutError as exc:
+        logger.warning("Citation check timeout (%ss) for brand %s", _CITATIONS_TIMEOUT, brand)
+        raise HTTPException(status_code=504, detail="Citation check timed out. Try again.") from exc
+    except Exception as e:
+        logger.error("Citation check error for %s: %s", brand, e)
+        raise HTTPException(status_code=500, detail="Internal error running the citation check.") from e
+
+    if result.skipped_reason:
+        logger.warning("Citation check skipped for %s: %s", brand, result.skipped_reason)
+        raise HTTPException(status_code=502, detail="The AI provider did not return answers. Try again.")
+
+    return {
+        "brand": result.brand,
+        "domain": result.domain,
+        "verdict": result.verdict,
+        "queries_run": result.queries_run,
+        "brand_mention_rate": result.brand_mention_rate,
+        "domain_citation_rate": result.domain_citation_rate,
+        "top_cited_domains": result.top_cited_domains,
+        "entries": [
+            {
+                "query": e.query,
+                "brand_mentioned": e.brand_mentioned,
+                "domain_cited": e.domain_cited,
+                "cited_sources": e.cited_sources[:3],
+                "snippet": e.snippet,
+            }
+            for e in result.entries
+            if not e.error
+        ],
+    }
+
+
 @app.get("/report/demo", response_class=HTMLResponse)
 async def report_demo_page():
     """Serve la pagina demo report dal frontend Astro."""
