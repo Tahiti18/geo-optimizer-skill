@@ -28,11 +28,13 @@ export default function NewsletterSignup({
       return;
     }
     setStatus('loading');
+    // Record the opt-in page so the backend can store it on the consent record.
+    const sourceUrl = typeof window !== 'undefined' ? window.location.href : undefined;
     try {
       const res = await fetch(CAPTURE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed, source }),
+        body: JSON.stringify({ email: trimmed, source, source_url: sourceUrl }),
       });
       setStatus(res.ok ? 'done' : 'error');
     } catch {
@@ -69,6 +71,14 @@ export default function NewsletterSignup({
           {status === 'loading' ? 'Subscribing…' : 'Notify me'}
         </button>
       </form>
+      <p className="mt-2 text-xs text-text-muted">
+        By submitting, you agree to receive the State of GEO report and occasional GeoReady benchmark
+        updates. You can unsubscribe anytime. See our{' '}
+        <a href="https://geoready.dev/privacy/" className="underline hover:text-text-secondary">
+          Privacy Policy
+        </a>
+        .
+      </p>
       {status === 'error' && (
         <p className="mt-2 text-xs text-red-500">Something went wrong — check the email and try again.</p>
       )}
