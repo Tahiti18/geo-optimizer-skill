@@ -50,6 +50,12 @@
     </image:image>
   </url>
   <url>
+    <loc>https://geoready.dev/best-geo-tools/</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://geoready.dev/compare/</loc>
     <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
@@ -120,6 +126,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://geoready.dev/guides/how-to-improve-ai-visibility/</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://geoready.dev/guides/llms-txt-wordpress/</loc>
     <lastmod>2026-06-05</lastmod>
     <changefreq>monthly</changefreq>
@@ -142,6 +154,12 @@
     <lastmod>2026-06-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://geoready.dev/methodology/</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://geoready.dev/pricing/</loc>
