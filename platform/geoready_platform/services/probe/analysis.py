@@ -11,6 +11,8 @@ import re
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
+from geoready_platform.services.probe.non_competitor_domains import filter_competitor_domains
+
 
 @dataclass
 class ResponseSignals:
@@ -48,7 +50,11 @@ def analyze_response(
 
     brand_mentioned = bool(name) and re.search(re.escape(name), text, re.IGNORECASE) is not None
     domain_cited = own in cited if own else False
-    competitor_domains = sorted({d for d in cited if d and d != own})
+    # Exclude the business's own domain AND reference/social/directory/etc.
+    # domains — those are citation sources, not competitors. See
+    # non_competitor_domains for the rationale.
+    candidate_competitors = sorted({d for d in cited if d and d != own})
+    competitor_domains = filter_competitor_domains(candidate_competitors)
 
     matched_names = [
         comp
