@@ -1,0 +1,75 @@
+# Local development stack for the GeoReady platform (Phase 0).
+#   docker compose up
+# Brings up Postgres, Redis, the API, and one Celery worker. The API and worker
+# images install the engine + platform extras and mount the repo for live dev.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: geoready
+      POSTGRES_PASSWORD: geoready
+      POSTGRES_DB: geoready
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geoready"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: python:3.11-slim
+    working_dir: /repo
+    command: >
+      bash -c "pip install -e '.[platform,async]' &&
+               cd platform && alembic upgrade head &&
+               uvicorn geoready_platform.api.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      GR_DATABASE_URL: postgresql+psycopg://geoready:geoready@postgres:5432/geoready
+      GR_REDIS_URL: redis://redis:6379/0
+      GR_JWT_SECRET: dev-insecure-change-me
+      GR_CELERY_EAGER: "false"
+    volumes:
+      - ..:/repo
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: python:3.11-slim
+    working_dir: /repo
+    command: >
+      bash -c "pip install -e '.[platform,async]' &&
+               celery -A geoready_platform.workers.celery_app worker --loglevel=info"
+    environment:
+      GR_DATABASE_URL: postgresql+psycopg://geoready:geoready@postgres:5432/geoready
+      GR_REDIS_URL: redis://redis:6379/0
+      GR_JWT_SECRET: dev-insecure-change-me
+      GR_CELERY_EAGER: "false"
+    volumes:
+      - ..:/repo
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
