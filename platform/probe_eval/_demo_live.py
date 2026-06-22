@@ -25,7 +25,7 @@ import sys
 from geoready_platform.services.probe import prompt_generator
 from geoready_platform.services.probe.taxonomy import CATEGORY_BY_KEY
 
-from probe_eval import diagnostics, metrics, openrouter_client
+from probe_eval import diagnostics, history, metrics, openrouter_client
 from probe_eval.harness import business_by_id, score_business
 
 MODE = diagnostics.MODE_LIVE_ONLY
@@ -162,6 +162,11 @@ def main() -> int:
 
     _say("\n=== AGGREGATE ===")
     _say(json.dumps(report["aggregate"], indent=2))
+
+    # Persist this run's summary to the gitignored diagnostics history.
+    saved = history.record_run(report)
+    _say(f"\nDiagnostics history updated: {saved}")
+
     _say("\n=== FULL REPORT (JSON) ===")
     print(json.dumps(report, indent=2), flush=True)
     return 0

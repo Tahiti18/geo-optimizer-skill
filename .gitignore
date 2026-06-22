@@ -70,3 +70,6 @@ geoready_platform.db
 
 # Live eval fixtures (real provider responses; not committed)
 platform/probe_eval/fixtures_live/
+
+# Internal LIVE_ONLY diagnostics history (operator-only; never committed)
+platform/probe_eval/.diagnostics_history/
