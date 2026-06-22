@@ -12,11 +12,27 @@ to any fixture. Do not change that.
 from __future__ import annotations
 
 import os
+import time
+from dataclasses import dataclass, field
 
 from geoready_platform.core_bridge.probe_adapter import ProbeResponse
 
 _URL = "https://openrouter.ai/api/v1/chat/completions"
 _TIMEOUT = 60
+
+
+@dataclass
+class RunMeta:
+    """Per-call diagnostics. No secrets. Used by the LIVE_ONLY demo runner."""
+
+    latency_ms: int = 0
+    timeout: bool = False
+    status_code: int | None = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    cost: float | None = None  # USD, only when OpenRouter returns it
+    error: str | None = None
+    extra: dict = field(default_factory=dict)
 
 
 def available() -> bool:
@@ -36,37 +52,64 @@ def _extract_citations(data: dict, message: dict) -> list[str]:
     return citations
 
 
-def run_prompt(prompt: str, *, model: str, timeout: float = _TIMEOUT) -> ProbeResponse:
-    """Query OpenRouter for one prompt. Returns a ProbeResponse (provenance kept).
+def run_prompt_with_meta(prompt: str, *, model: str, timeout: float = _TIMEOUT) -> tuple[ProbeResponse, RunMeta]:
+    """Query OpenRouter and return (ProbeResponse, RunMeta).
 
-    ``timeout`` is the total request timeout in seconds; on expiry a clear
-    error is returned (never hangs).
+    Captures latency, timeout status, HTTP status, token usage, and cost (when
+    available). Requests ``usage.include`` so OpenRouter returns cost. Never
+    leaks the key — error strings carry only exception type/message.
     """
     import httpx
 
+    meta = RunMeta()
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
-        return ProbeResponse(prompt=prompt, provider="openrouter", model=model, text="",
-                             error="OPENROUTER_API_KEY not set")
+        meta.error = "OPENROUTER_API_KEY not set"
+        return ProbeResponse(prompt=prompt, provider="openrouter", model=model, text="", error=meta.error), meta
+
+    t0 = time.perf_counter()
     try:
         resp = httpx.post(
             _URL,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"model": model, "messages": [{"role": "user", "content": prompt}]},
+            json={
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "usage": {"include": True},  # ask OpenRouter to return cost
+            },
             timeout=httpx.Timeout(timeout),
         )
+        meta.latency_ms = int((time.perf_counter() - t0) * 1000)
+        meta.status_code = resp.status_code
         resp.raise_for_status()
         data = resp.json()
         choice = (data.get("choices") or [{}])[0]
         message = choice.get("message") or {}
-        return ProbeResponse(
+        usage = data.get("usage") or {}
+        meta.prompt_tokens = int(usage.get("prompt_tokens") or 0)
+        meta.completion_tokens = int(usage.get("completion_tokens") or 0)
+        cost = usage.get("cost")
+        meta.cost = float(cost) if isinstance(cost, (int, float)) else None
+        pr = ProbeResponse(
             prompt=prompt,
             provider="openrouter",
             model=data.get("model", model),
             text=message.get("content") or "",
             citations=_extract_citations(data, message),
         )
+        return pr, meta
+    except httpx.TimeoutException as exc:
+        meta.latency_ms = int((time.perf_counter() - t0) * 1000)
+        meta.timeout = True
+        meta.error = f"{type(exc).__name__}: {exc}"
+        return ProbeResponse(prompt=prompt, provider="openrouter", model=model, text="", error=meta.error), meta
     except Exception as exc:  # noqa: BLE001 — never leak key; report type/message only
-        # Defensive: ensure no header/key is in the message.
-        msg = f"{type(exc).__name__}: {exc}"
-        return ProbeResponse(prompt=prompt, provider="openrouter", model=model, text="", error=msg)
+        meta.latency_ms = int((time.perf_counter() - t0) * 1000)
+        meta.error = f"{type(exc).__name__}: {exc}"
+        return ProbeResponse(prompt=prompt, provider="openrouter", model=model, text="", error=meta.error), meta
+
+
+def run_prompt(prompt: str, *, model: str, timeout: float = _TIMEOUT) -> ProbeResponse:
+    """Backward-compatible wrapper returning only the ProbeResponse."""
+    pr, _meta = run_prompt_with_meta(prompt, model=model, timeout=timeout)
+    return pr
