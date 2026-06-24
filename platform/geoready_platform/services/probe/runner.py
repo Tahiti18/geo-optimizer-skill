@@ -11,7 +11,8 @@ Mirrors services/audits.py, with two deliberate differences:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from sqlalchemy import func, select
@@ -26,6 +27,15 @@ from geoready_platform.services.probe import hallucination, prompt_generator, sh
 from geoready_platform.services.probe.analysis import analyze_response
 from geoready_platform.services.probe.share_of_model import AnalyzedResponse
 from geoready_platform.services.probe.taxonomy import CATEGORY_BY_KEY
+
+logger = logging.getLogger(__name__)
+
+
+STALE_RUN_MINUTES = 10
+STALE_RUN_MESSAGE = (
+    "This analysis did not finish because the worker stopped or the server was "
+    "restarted. Please run it again."
+)
 
 
 class ProbeQuotaExceededError(Exception):
@@ -45,6 +55,25 @@ def _domain_of(website_url: str) -> str:
     return (parsed.netloc or parsed.path).split("/")[0].lower()
 
 
+def _provider_error_summary(provider: str, errors: list[str]) -> str:
+    """Safe, user-facing reason for a run where every prompt failed at the
+    provider. Never leaks keys or full stack traces — just the actionable cause."""
+    blob = " ".join(errors).lower()
+    if "401" in blob or "unauthorized" in blob:
+        detail = "The provider returned 401 Unauthorized — the API key is missing, invalid, or expired."
+        if provider == "openrouter":
+            detail += " Check OPENROUTER_API_KEY in the API server environment."
+    elif "403" in blob or "forbidden" in blob:
+        detail = "The provider returned 403 Forbidden — the API key lacks access to this model."
+    elif "429" in blob or "rate limit" in blob:
+        detail = "The provider rate-limited the request (429). Try again shortly."
+    elif "timeout" in blob or "timed out" in blob:
+        detail = "The provider did not respond in time (timeout)."
+    else:
+        detail = "The provider could not be reached or returned an error."
+    return f"The AI provider ({provider}) could not be reached for this run. {detail}"
+
+
 def _check_quota(session: Session, org_id: str) -> None:
     settings = get_settings()
     since = _utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -55,8 +84,46 @@ def _check_quota(session: Session, org_id: str) -> None:
         raise ProbeQuotaExceededError(f"Daily probe quota ({settings.free_probes_per_day}) reached")
 
 
+def _mark_dispatch_failure(run_id: str, exc: BaseException) -> None:
+    """Mark a `queued` run as `failed` after a dispatch-layer crash.
+
+    Called from both the synchronous inline path and the background thread guard
+    so that NO probe row can ever stay stuck in `queued` because the task
+    framework (Celery broker, thread machinery) blew up between commit and
+    execution. Idempotent: a run already `complete`/`failed` is left alone.
+    """
+    try:
+        with session_scope() as session:
+            run = session.get(ProbeRun, run_id)
+            if run is not None and run.status not in (
+                AuditStatus.complete.value,
+                AuditStatus.failed.value,
+            ):
+                run.status = AuditStatus.failed.value
+                run.error = f"Worker crashed: {type(exc).__name__}: {exc}"
+                run.completed_at = _utcnow()
+    except Exception:  # noqa: BLE001
+        logger.exception("Could not mark run %s failed after dispatch crash", run_id)
+
+
+def _run_probe_in_thread(run_id: str) -> None:
+    """Thread target: execute the probe job and mark failed on ANY crash."""
+    try:
+        from geoready_platform.workers.probe_task import run_probe_job
+
+        run_probe_job.apply(args=[run_id])
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Probe thread crashed for run %s", run_id)
+        _mark_dispatch_failure(run_id, exc)
+
+
 def enqueue_probe(session: Session, *, org_id: str, entity_id: str) -> ProbeRun:
-    """Create a queued probe run. Auth + quota only — NO ownership gate."""
+    """Create a queued probe run. Auth + quota only — NO ownership gate.
+
+    Every created run is guaranteed to reach `running` / `complete` / `failed`:
+    each dispatch branch either succeeds, or marks the run failed before
+    returning. A row can never be left orphaned in `queued` by this path.
+    """
     entity = get_entity(session, org_id=org_id, entity_id=entity_id)
     _check_quota(session, org_id)
 
@@ -69,6 +136,7 @@ def enqueue_probe(session: Session, *, org_id: str, entity_id: str) -> ProbeRun:
     session.add(run)
     session.flush()
     run_id = run.id
+    logger.info("Created probe run %s for entity %s", run_id, entity_id)
 
     # Commit before dispatch so the worker (eager or remote) can read the run.
     session.commit()
@@ -77,11 +145,58 @@ def enqueue_probe(session: Session, *, org_id: str, entity_id: str) -> ProbeRun:
 
     settings = get_settings()
     if settings.celery_eager:
-        run_probe_job.apply(args=[run_id])
+        if settings.probe_eager_background:
+            import threading
+
+            logger.info("Dispatching probe %s on background thread (eager)", run_id)
+            threading.Thread(target=_run_probe_in_thread, args=(run_id,), daemon=True).start()
+        else:
+            logger.info("Running probe %s inline (eager, blocking)", run_id)
+            try:
+                run_probe_job.apply(args=[run_id])
+            except Exception as exc:  # noqa: BLE001 — never leave the run queued
+                logger.exception("Inline probe dispatch crashed for run %s", run_id)
+                _mark_dispatch_failure(run_id, exc)
+                raise
     else:
-        run_probe_job.delay(run_id)
+        try:
+            logger.info("Dispatching probe %s to Celery broker", run_id)
+            run_probe_job.delay(run_id)
+        except Exception as exc:  # noqa: BLE001 — broker down
+            logger.exception("Failed to dispatch probe %s to broker, falling back to thread", run_id)
+            import threading
+
+            threading.Thread(target=_run_probe_in_thread, args=(run_id,), daemon=True).start()
 
     return run
+
+
+def reap_stale_runs(
+    session: Session, *, org_id: str | None = None, older_than_minutes: int = STALE_RUN_MINUTES
+) -> int:
+    """Mark queued/running runs older than the threshold as failed.
+
+    Such runs are orphans from a crashed/restarted worker — they will never
+    complete on their own and otherwise show as perpetually "active" on the
+    portfolio/result pages. Only the run row is touched, so any Perception rows
+    already collected are preserved. Recent (still-plausibly-active) runs are
+    left alone. Idempotent; returns the number reaped.
+    """
+    cutoff = _utcnow() - timedelta(minutes=older_than_minutes)
+    stmt = select(ProbeRun).where(
+        ProbeRun.status.in_((AuditStatus.queued.value, AuditStatus.running.value)),
+        func.coalesce(ProbeRun.started_at, ProbeRun.created_at) < cutoff,
+    )
+    if org_id is not None:
+        stmt = stmt.where(ProbeRun.org_id == org_id)
+    stale = session.execute(stmt).scalars().all()
+    for run in stale:
+        run.status = AuditStatus.failed.value
+        run.error = STALE_RUN_MESSAGE
+        run.completed_at = _utcnow()
+    if stale:
+        session.flush()
+    return len(stale)
 
 
 def get_probe(session: Session, *, org_id: str, run_id: str) -> ProbeRun:
@@ -95,6 +210,7 @@ def get_probe(session: Session, *, org_id: str, run_id: str) -> ProbeRun:
 
 def execute_probe_run(run_id: str) -> None:
     """Run all prompts for a probe, persist per-prompt Perceptions + run metrics."""
+    logger.info("Running probe job %s", run_id)
     settings = get_settings()
 
     # Phase A: load run + entity facts, mark running.
@@ -123,14 +239,16 @@ def execute_probe_run(run_id: str) -> None:
 
     # Resolve provider once.
     provider, api_key = resolve_probe_provider(settings.probe_provider)
+    logger.info("Probe %s: provider=%s, key_set=%s", run_id, provider, bool(api_key))
     if not provider or not api_key:
         with session_scope() as session:
             run = session.get(ProbeRun, run_id)
             if run is not None:
                 run.status = AuditStatus.failed.value
                 run.error = (
-                    "No AI provider configured. Set PERPLEXITY_API_KEY (recommended: real web-grounded "
-                    "answers) or OPENAI_API_KEY / ANTHROPIC_API_KEY."
+                    "No AI provider configured. Set OPENROUTER_API_KEY (recommended: one key, 400+ "
+                    "models incl. web-grounded Perplexity) or PERPLEXITY_API_KEY / OPENAI_API_KEY / "
+                    "ANTHROPIC_API_KEY in the API server environment."
                 )
                 run.completed_at = _utcnow()
         return
@@ -214,12 +332,24 @@ def execute_probe_run(run_id: str) -> None:
             for f in row["flags"]
         ]
 
+        # A run where EVERY prompt failed at the provider (e.g. 401) produced no
+        # readable answers — it is a provider/auth failure, not a 0-visibility
+        # result. Mark it failed (with a safe reason) so the UI never presents it
+        # as a legitimate report. Per-prompt rows + details.error are still saved
+        # below for diagnostics. Partial runs stay `complete` (frontend warns).
+        provider_errors = [row["error"] for row in rows if row["error"]]
+        all_failed = bool(rows) and answered == 0 and len(provider_errors) == len(rows)
+        run_error = _provider_error_summary(provider, provider_errors) if all_failed else None
+
         # Phase C: persist everything.
+        final_status = "failed" if all_failed else "complete"
+        logger.info("Probe %s: %d/%d answered, status=%s", run_id, answered, len(rows), final_status)
         with session_scope() as session:
             run = session.get(ProbeRun, run_id)
             if run is None:
                 raise ProbeRunNotFoundError(run_id)
-            run.status = AuditStatus.complete.value
+            run.status = AuditStatus.failed.value if all_failed else AuditStatus.complete.value
+            run.error = run_error
             run.provider = provider
             run.model = model_seen
             run.prompt_count = len(rows)

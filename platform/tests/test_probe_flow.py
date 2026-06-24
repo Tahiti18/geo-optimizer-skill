@@ -135,3 +135,238 @@ def test_no_provider_marks_run_failed(client, org_key, monkeypatch):
     run = client.get(f"/v1/probes/{run_id}", headers=headers).json()
     assert run["status"] == "failed"
     assert "provider" in run["error"].lower()
+
+
+def test_reap_stale_runs_fails_old_active_keeps_recent_and_preserves_perceptions():
+    """Stale queued/running runs (older than the threshold) are marked failed with
+    a safe message; recent active runs are left alone; collected Perception rows
+    are preserved."""
+    from datetime import timedelta
+
+    from sqlalchemy import func, select
+
+    from geoready_platform.db.base import session_scope
+    from geoready_platform.db.models import AuditStatus, Perception, ProbeRun
+    from geoready_platform.services.probe import runner as r
+
+    now = r._utcnow()
+    with session_scope() as s:
+        stale = ProbeRun(org_id="o1", entity_id="e1", status=AuditStatus.running.value,
+                         started_at=now - timedelta(minutes=20))
+        queued_old = ProbeRun(org_id="o1", entity_id="e1", status=AuditStatus.queued.value,
+                              started_at=now - timedelta(minutes=15))
+        recent = ProbeRun(org_id="o1", entity_id="e1", status=AuditStatus.running.value,
+                          started_at=now - timedelta(minutes=1))
+        s.add_all([stale, queued_old, recent])
+        s.flush()
+        stale_id, recent_id = stale.id, recent.id
+        s.add(Perception(org_id="o1", entity_id="e1", probe_run_id=stale_id,
+                         prompt="q", raw_response="", prompt_category="category_recommendation"))
+        s.flush()
+
+        reaped = r.reap_stale_runs(s)
+        assert reaped == 2  # stale running + old queued
+
+        s.refresh(stale)
+        s.refresh(recent)
+        assert stale.status == "failed"
+        assert stale.error == r.STALE_RUN_MESSAGE
+        assert stale.completed_at is not None
+        assert recent.status == "running"  # within threshold → untouched
+
+        # Perceptions collected before the run stalled are preserved.
+        kept = s.execute(
+            select(func.count(Perception.id)).where(Perception.probe_run_id == stale_id)
+        ).scalar_one()
+        assert kept == 1
+
+
+def test_eager_background_dispatch_does_not_block_the_post(client, org_key, monkeypatch):
+    """In background-eager mode the enqueue POST must hand the job to a thread and
+    return 202 WITHOUT running the probe inline — so the client gets a run id to
+    poll instead of the request blocking for the whole multi-prompt probe.
+
+    Deterministic (no real thread / no concurrent DB writes): we stub
+    threading.Thread to capture the dispatch but not execute it, then assert the
+    run is still pending — proving the POST did not run the probe synchronously."""
+    from dataclasses import replace
+
+    from geoready_platform.config import get_settings
+
+    headers = org_key["headers"]
+    bg_settings = replace(get_settings(), probe_eager_background=True)
+    monkeypatch.setattr(runner, "get_settings", lambda: bg_settings)
+    _stub_provider(monkeypatch)
+    monkeypatch.setattr(runner, "run_prompt", _fake_run_prompt)
+
+    dispatched = {"thread": False}
+
+    class _CapturedThread:
+        def __init__(self, *a, **k):
+            dispatched["thread"] = True
+
+        def start(self):  # captured, intentionally not executed
+            pass
+
+    monkeypatch.setattr("threading.Thread", _CapturedThread)
+
+    eid = _make_entity(client, headers)
+    resp = client.post(f"/v1/entities/{eid}/probes", headers=headers)
+    assert resp.status_code == 202, resp.text
+    run_id = resp.json()["probe_run_id"]
+
+    # The POST dispatched to a background thread and returned without executing.
+    assert dispatched["thread"] is True
+    run = client.get(f"/v1/probes/{run_id}", headers=headers).json()
+    assert run["status"] in ("queued", "running")  # not run inline → still pending
+
+
+def test_all_prompts_provider_error_marks_run_failed(client, org_key, monkeypatch):
+    """Every prompt 401s → run is `failed` with a safe reason, NOT a 0-visibility
+    `complete` result. Per-prompt rows + details.error are preserved for diagnostics."""
+    headers = org_key["headers"]
+    monkeypatch.setattr(runner, "resolve_probe_provider", lambda p=None: ("openrouter", "bad-key"))
+
+    def _all_401(prompt, *, provider, api_key):
+        return ProbeResponse(
+            prompt=prompt, provider="openrouter", model="perplexity/sonar", text="",
+            error="HTTPStatusError: Client error '401 Unauthorized' for url 'https://openrouter.ai/...'",
+        )
+
+    monkeypatch.setattr(runner, "run_prompt", _all_401)
+    eid = _make_entity(client, headers)
+    run_id = client.post(f"/v1/entities/{eid}/probes", headers=headers).json()["probe_run_id"]
+
+    run = client.get(f"/v1/probes/{run_id}", headers=headers).json()
+    assert run["status"] == "failed"
+    assert run["answered_count"] == 0
+    assert "401" in run["error"] and "OPENROUTER_API_KEY" in run["error"]
+
+    # Prompts are preserved as a diagnostic record with their per-prompt error.
+    responses = client.get(f"/v1/probes/{run_id}/responses", headers=headers).json()
+    assert responses and all(not (r["raw_response"] or "").strip() for r in responses)
+    assert all(r["details"] and "401" in r["details"]["error"] for r in responses)
+
+
+def test_partial_answers_stay_complete_with_warning(client, org_key, monkeypatch):
+    """Some prompts succeed, some fail → run stays `complete`, answered_count < prompt_count
+    so the frontend can show a partial-result warning."""
+    headers = org_key["headers"]
+    monkeypatch.setattr(runner, "resolve_probe_provider", lambda p=None: ("openrouter", "test-key"))
+
+    def _partial(prompt, *, provider, api_key):
+        if "best" in prompt.lower():
+            return ProbeResponse(prompt=prompt, provider="openrouter", model="perplexity/sonar",
+                                 text="Acme Plumbing is a great option.", citations=["https://acme.com"])
+        return ProbeResponse(prompt=prompt, provider="openrouter", model="perplexity/sonar",
+                             text="", error="ReadTimeout: provider timed out")
+
+    monkeypatch.setattr(runner, "run_prompt", _partial)
+    eid = _make_entity(client, headers)
+    run_id = client.post(f"/v1/entities/{eid}/probes", headers=headers).json()["probe_run_id"]
+
+    run = client.get(f"/v1/probes/{run_id}", headers=headers).json()
+    assert run["status"] == "complete"
+    assert 0 < run["answered_count"] < run["prompt_count"]
+    assert run["error"] is None
+
+
+def test_enqueue_creates_a_fresh_run_every_time(client, org_key, monkeypatch):
+    """Retry path: every POST /v1/entities/{id}/probes must mint a NEW probe row
+    with a distinct id — never reuse or resurrect a previous failed/complete run."""
+    headers = org_key["headers"]
+    _stub_provider(monkeypatch)
+    monkeypatch.setattr(runner, "run_prompt", _fake_run_prompt)
+    eid = _make_entity(client, headers)
+
+    ids = [client.post(f"/v1/entities/{eid}/probes", headers=headers).json()["probe_run_id"]
+           for _ in range(3)]
+    assert len(set(ids)) == 3, f"expected three distinct run ids, got {ids}"
+
+
+def test_broker_dispatch_failure_falls_back_to_thread(client, org_key, monkeypatch):
+    """When .delay() raises (broker unreachable), enqueue must fall back to the
+    background thread path instead of returning 500 + leaving an orphan `queued`
+    row. The run must still reach a terminal status."""
+    from dataclasses import replace
+
+    from geoready_platform.config import get_settings
+
+    headers = org_key["headers"]
+    # Force the broker branch and deterministic inline thread execution.
+    broker_settings = replace(get_settings(), celery_eager=False, probe_eager_background=False)
+    monkeypatch.setattr(runner, "get_settings", lambda: broker_settings)
+    _stub_provider(monkeypatch)
+    monkeypatch.setattr(runner, "run_prompt", _fake_run_prompt)
+
+    # Make .delay() blow up like a missing broker would.
+    import geoready_platform.workers.probe_task as probe_task
+    monkeypatch.setattr(probe_task.run_probe_job, "delay",
+                        lambda *a, **k: (_ for _ in ()).throw(ConnectionError("broker down")))
+
+    # Run the fallback thread synchronously so the assertion below sees the
+    # terminal state without sleeping/polling.
+    class _SyncThread:
+        def __init__(self, target, args=(), kwargs=None, daemon=None):  # noqa: ANN001
+            self._target = target; self._args = args; self._kwargs = kwargs or {}
+
+        def start(self):
+            self._target(*self._args, **self._kwargs)
+
+    monkeypatch.setattr("threading.Thread", _SyncThread)
+
+    eid = _make_entity(client, headers)
+    resp = client.post(f"/v1/entities/{eid}/probes", headers=headers)
+    assert resp.status_code == 202, resp.text  # NOT 500
+    run = client.get(f"/v1/probes/{resp.json()['probe_run_id']}", headers=headers).json()
+    assert run["status"] == "complete"  # ran via the thread fallback
+
+
+def test_thread_crash_guard_marks_run_failed_not_orphaned(client, org_key, monkeypatch):
+    """If the background-thread target itself raises BEFORE the probe runner can
+    catch it (e.g. import error, Celery framework crash), the dispatch guard
+    must mark the run failed so no row is ever stuck in `queued`."""
+    from dataclasses import replace
+
+    from geoready_platform.config import get_settings
+
+    headers = org_key["headers"]
+    bg_settings = replace(get_settings(), celery_eager=True, probe_eager_background=True)
+    monkeypatch.setattr(runner, "get_settings", lambda: bg_settings)
+
+    # Make the celery task's .apply() crash from inside the thread.
+    import geoready_platform.workers.probe_task as probe_task
+    monkeypatch.setattr(probe_task.run_probe_job, "apply",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("framework boom")))
+
+    # Inline-execute the dispatched thread so the assertion sees the final state.
+    class _SyncThread:
+        def __init__(self, target, args=(), kwargs=None, daemon=None):  # noqa: ANN001
+            self._target = target; self._args = args; self._kwargs = kwargs or {}
+
+        def start(self):
+            self._target(*self._args, **self._kwargs)
+
+    monkeypatch.setattr("threading.Thread", _SyncThread)
+
+    eid = _make_entity(client, headers)
+    resp = client.post(f"/v1/entities/{eid}/probes", headers=headers)
+    assert resp.status_code == 202, resp.text
+    run = client.get(f"/v1/probes/{resp.json()['probe_run_id']}", headers=headers).json()
+    assert run["status"] == "failed", f"expected failed, got {run['status']}"
+    assert "framework boom" in (run["error"] or "")
+
+
+def test_all_answers_complete_normally(client, org_key, monkeypatch):
+    """Sanity: when every prompt returns text, the run is a normal `complete`
+    with answered_count == prompt_count."""
+    headers = org_key["headers"]
+    _stub_provider(monkeypatch)
+    monkeypatch.setattr(runner, "run_prompt", _fake_run_prompt)
+    eid = _make_entity(client, headers)
+    run_id = client.post(f"/v1/entities/{eid}/probes", headers=headers).json()["probe_run_id"]
+
+    run = client.get(f"/v1/probes/{run_id}", headers=headers).json()
+    assert run["status"] == "complete"
+    assert run["answered_count"] == run["prompt_count"] > 0
+    assert run["error"] is None

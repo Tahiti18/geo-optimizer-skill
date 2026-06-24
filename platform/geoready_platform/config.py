@@ -45,8 +45,19 @@ class Settings:
 
     # ─── Worker execution ────────────────────────────────────────────────────
     # When true, Celery runs tasks inline (no broker needed) — used by tests and
-    # by single-process local dev. Production runs real workers (eager=False).
-    celery_eager: bool = field(default_factory=lambda: _env_bool("GR_CELERY_EAGER", False))
+    # by single-process local dev. Production / docker-compose stacks override
+    # this to `false` explicitly (see platform/docker-compose.yml) and run a real
+    # `celery -A geoready_platform.workers.celery_app worker` against Redis. The
+    # default is True so a fresh `uvicorn` + `pip install -e` checkout works
+    # end-to-end without requiring the operator to also start Redis + a worker
+    # just to see a probe complete; production deployments MUST set this to
+    # `false` (the docker-compose, k8s, and prod env templates already do).
+    celery_eager: bool = field(default_factory=lambda: _env_bool("GR_CELERY_EAGER", True))
+    # In eager local dev, run the (synchronous) job on a background thread so the
+    # enqueue POST returns 202 immediately and the client polls — instead of the
+    # request blocking for the entire multi-prompt probe. Tests set this false to
+    # keep deterministic inline completion.
+    probe_eager_background: bool = field(default_factory=lambda: _env_bool("GR_PROBE_EAGER_BACKGROUND", True))
     audit_timeout_seconds: int = field(default_factory=lambda: int(os.environ.get("GR_AUDIT_TIMEOUT_SECONDS", "60")))
 
     # ─── Rate limiting (per API key) ─────────────────────────────────────────
