@@ -73,3 +73,6 @@ platform/probe_eval/fixtures_live/
 
 # Internal LIVE_ONLY diagnostics history (operator-only; never committed)
 platform/probe_eval/.diagnostics_history/
+platform/*.db-shm
+platform/*.db-wal
+platform/*.db-journal
