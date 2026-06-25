@@ -13,7 +13,7 @@ import { getApiKey } from "./platformStore";
 
 // Direct to the platform API (CORS-enabled for local dev). Override with
 // PUBLIC_PLATFORM_API_BASE for other environments.
-const BASE = (import.meta.env.PUBLIC_PLATFORM_API_BASE as string) || "http://localhost:8001";
+const BASE = (import.meta.env.PUBLIC_PLATFORM_API_BASE as string) || "https://geo-optimizer-web-production.up.railway.app";
 
 // Per-endpoint timeout tiers. Health/entities should be snappy; probe reads
 // (result + per-prompt answers) can legitimately be slower, so they get more
